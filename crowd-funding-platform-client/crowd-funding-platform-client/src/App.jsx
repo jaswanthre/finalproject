@@ -1,9 +1,11 @@
+
 import { Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { WalletProvider } from "./context/WalletContext";
 import { AuthProvider } from "./context/AuthContext";
+
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -79,5 +81,6 @@ export default function App() {
         </div>
       </WalletProvider>
     </AuthProvider>
+
   );
 }

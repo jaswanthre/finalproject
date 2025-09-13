@@ -17,6 +17,7 @@ export default function DonationForm({ campaignId, campaignTitle, campaignImage,
 
 
 
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setMsg("");
@@ -25,7 +26,7 @@ export default function DonationForm({ campaignId, campaignTitle, campaignImage,
       setMsg("Please enter at least ₹1.");
       return;
     }
-    
+
     setLoading(true);
     try {
       // Use the makeDonation function from WalletContext with all campaign details
@@ -97,6 +98,7 @@ export default function DonationForm({ campaignId, campaignTitle, campaignImage,
     }
   };
 
+
   if (showSuccess) {
     return (
       <div className="donation-success">
@@ -137,6 +139,7 @@ export default function DonationForm({ campaignId, campaignTitle, campaignImage,
             type="number"
             min="1"
             max={walletBalance}
+
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="Enter amount"
