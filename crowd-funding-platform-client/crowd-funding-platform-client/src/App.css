@@ -1,0 +1,2 @@
+/* Additional small tweaks so we keep index.css readable */
+.card img + .card-body { margin-top: 8px; }
