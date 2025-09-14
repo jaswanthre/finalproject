@@ -26,7 +26,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-
   gap: 1rem;
 }
 
@@ -97,6 +96,18 @@
   outline: none;
   border-color: #3a6186;
   background: rgba(17, 24, 39, 0.85);
+}
+
+/* Error Styling */
+.input-error {
+  border-color: red !important;
+}
+
+.error {
+  color: red;
+  font-size: 0.85rem;
+  margin-top: 4px;
+  text-align: left;
 }
 
 /* Buttons */

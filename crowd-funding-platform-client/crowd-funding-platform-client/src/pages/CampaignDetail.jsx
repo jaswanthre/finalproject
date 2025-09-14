@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import client, { campaignServiceClient } from "../api/client";
 import mockAPI from "../api/mockService";
 import ProgressBar from "../components/ProgressBar";
-import DonationForm from "../components/DonationForm";
+import DonationForm from "../pages/DonationForm";
 
 export default function CampaignDetail() {
   const { id } = useParams();

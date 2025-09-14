@@ -1,66 +1,122 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useWallet } from "../context/WalletContext";
 import "./DonorDashboard.css";
 
 function DonorDashboard() {
   const { user } = useAuth();
-  const { getDonationTransactions } = useWallet();
+  const [donationTransactions, setDonationTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalDonations: 0,
     totalAmount: 0,
     recentCampaigns: []
   });
   const [recentDonations, setRecentDonations] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  const fetchDonations = async () => {
+    if (!user?.email || !user?.token) return;
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/donors/donation/email/${user.email}`,
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          }
+        }
+      );
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        const formatted = await Promise.all(
+          data.map(async (d) => {
+            try {
+              const campaignRes = await fetch(
+                `http://localhost:5000/api/campaigns/campaign/campaigns/${d.campaign_id}`
+              );
+              const campaign = await campaignRes.json();
+
+              return {
+                id: d.donation_id,
+                campaignId: d.campaign_id,
+                amount: Number(d.amount),
+                date: d.created_at || new Date().toISOString(),
+                status: d.payment_status || "pending",
+                campaignTitle: campaign.title,
+                campaignImage: campaign.campaign_image,
+                ngoName: campaign.ngo_email,
+                location: campaign.city,
+                goalAmount: Number(campaign.target_amount) || 0,
+                raisedAmount: Number(campaign.raised_amount) || 0,
+                progressPercentage: campaign.target_amount
+                  ? Math.round(
+                      (Number(campaign.raised_amount) /
+                        Number(campaign.target_amount)) *
+                        100
+                    )
+                  : 0,
+              };
+            } catch {
+              return {
+                id: d.donation_id,
+                campaignId: d.campaign_id,
+                amount: Number(d.amount),
+                date: d.created_at || new Date().toISOString(),
+                status: d.payment_status || "pending",
+                campaignTitle: d.campaign_title || "Campaign",
+                campaignImage: d.campaign_image || "",
+                ngoName: d.ngo_email || "NGO",
+                location: d.city || "Online",
+                goalAmount: Number(d.target_amount) || 0,
+                raisedAmount: Number(d.raised_amount) || 0,
+                progressPercentage: d.target_amount
+                  ? Math.round(
+                      (Number(d.raised_amount) / Number(d.target_amount)) *
+                        100
+                    )
+                  : 0,
+              };
+            }
+          })
+        );
+        setDonationTransactions(formatted);
+      }
+    } catch (err) {
+      console.error("Error fetching donations:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // Get real donation data from WalletContext
-        const donationTransactions = getDonationTransactions();
-        
-        if (donationTransactions.length === 0) {
-          setStats({
-            totalDonations: 0,
-            totalAmount: 0,
-            recentCampaigns: []
-          });
-          setRecentDonations([]);
-        } else {
-          // Calculate stats from real data
-          const totalDonations = donationTransactions.length;
-          const totalAmount = donationTransactions.reduce((sum, donation) => sum + donation.amount, 0);
-          
-          // Get unique campaigns
-          const uniqueCampaigns = Array.from(new Set(donationTransactions.map(d => d.campaignId)))
-            .map(campaignId => {
-              const donation = donationTransactions.find(d => d.campaignId === campaignId);
-              return {
-                id: campaignId,
-                title: donation.campaignTitle,
-                amount: donation.amount
-              };
-            });
-          
-          setStats({
-            totalDonations,
-            totalAmount,
-            recentCampaigns: uniqueCampaigns
-          });
-          
-          // Get recent donations (up to 3)
-          setRecentDonations(donationTransactions.slice(0, 3));
-        }
-      } catch (error) {
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchDonations();
+  }, [user]);
 
-    fetchDashboardData();
-  }, [getDonationTransactions]);
+  useEffect(() => {
+    if (!loading) {
+      const totalDonations = donationTransactions.length;
+      const totalAmount = donationTransactions.reduce((sum, donation) => sum + donation.amount, 0);
+
+      const uniqueCampaigns = Array.from(new Set(donationTransactions.map(d => d.campaignId)))
+        .map(campaignId => {
+          const donation = donationTransactions.find(d => d.campaignId === campaignId);
+          return {
+            id: campaignId,
+            title: donation.campaignTitle,
+            amount: donation.amount
+          };
+        });
+
+      setStats({
+        totalDonations,
+        totalAmount,
+        recentCampaigns: uniqueCampaigns
+      });
+
+      setRecentDonations(donationTransactions.slice(0, 3));
+    }
+  }, [donationTransactions, loading]);
 
   return (
     <div className="container donor-dashboard">
@@ -75,7 +131,7 @@ function DonorDashboard() {
           </div>
         </div>
       </div>
-      
+
       {loading ? (
         <div className="loading-spinner">Loading...</div>
       ) : (
@@ -83,21 +139,12 @@ function DonorDashboard() {
           <div className="card dashboard-card">
             <h2>Quick Links</h2>
             <div className="quick-links">
-              <Link to="/profile" className="quick-link">
-                <span className="quick-link-icon">👤</span>
-                <span className="quick-link-text">My Profile</span>
-              </Link>
-              <Link to="/my-donations" className="quick-link">
-                <span className="quick-link-icon">💰</span>
-                <span className="quick-link-text">My Donations</span>
-              </Link>
-              <Link to="/campaigns" className="quick-link">
-                <span className="quick-link-icon">🌍</span>
-                <span className="quick-link-text">Browse Campaigns</span>
-              </Link>
+              <Link to="/my-profile" className="quick-link">👤 My Profile</Link>
+              <Link to="/my-donations" className="quick-link">💰 My Donations</Link>
+              <Link to="/d-campaigns" className="quick-link">🌍 Browse Campaigns</Link>
             </div>
           </div>
-          
+
           <div className="card dashboard-card summary-card">
             <h2>Donation Summary</h2>
             <div className="stats-grid">
@@ -114,7 +161,7 @@ function DonorDashboard() {
               <Link to="/my-donations" className="btn btn-primary view-all-btn">View All Donations</Link>
             </div>
           </div>
-          
+
           <div className="card dashboard-card donations-preview-card">
             <h2>My Recent Donations</h2>
             {recentDonations.length > 0 ? (
@@ -122,7 +169,7 @@ function DonorDashboard() {
                 {recentDonations.map(donation => (
                   <div key={donation.id} className="recent-donation-item">
                     <div className="donation-campaign-image">
-                      <img src={donation.image || donation.campaignImage} alt={donation.campaignTitle} />
+                      <img src={donation.campaignImage || "https://via.placeholder.com/150"} alt={donation.campaignTitle} />
                     </div>
                     <div className="donation-details">
                       <h3 className="donation-campaign-title">{donation.campaignTitle}</h3>
@@ -132,12 +179,10 @@ function DonorDashboard() {
                       </div>
                       <div className="donation-amount-date">
                         <span className="donation-amount">₹{donation.amount.toLocaleString()}</span>
-                        <span className="donation-date">{donation.date}</span>
+                        <span className="donation-date">{new Date(donation.date).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <Link to={`/campaigns/${donation.campaignId}`} className="btn btn-sm btn-outline">
-                      View Campaign
-                    </Link>
+                    <Link to={`/d-campaigns/${donation.campaignId}`} className="btn btn-sm btn-outline">View Campaign</Link>
                   </div>
                 ))}
               </div>

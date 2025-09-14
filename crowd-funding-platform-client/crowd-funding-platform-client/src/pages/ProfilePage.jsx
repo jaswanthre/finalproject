@@ -15,6 +15,8 @@ export default function ProfilePage() {
     address: "",
     profile_image: null,
   });
+  const [imagePreview, setImagePreview] = useState(null); // For preview
+  const [errors, setErrors] = useState({});
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -22,6 +24,8 @@ export default function ProfilePage() {
     Authorization: `Bearer ${user?.token}`,
     "Content-Type": "multipart/form-data",
   };
+
+  const IMAGE_KEY = "profile_image_data";
 
   const fetchProfile = async () => {
     try {
@@ -38,6 +42,14 @@ export default function ProfilePage() {
           address: res.data.profile.address || "",
           profile_image: null,
         });
+
+        // Load image from localStorage if exists
+        const storedImage = localStorage.getItem(IMAGE_KEY);
+        if (storedImage) {
+          setImagePreview(storedImage);
+        } else if (res.data.profile.profile_image) {
+          setImagePreview(res.data.profile.profile_image);
+        }
       }
     } catch (err) {
       console.log("No profile yet:", err.response?.data);
@@ -50,18 +62,43 @@ export default function ProfilePage() {
 
   const handleChange = (k, v) => {
     setForm((f) => ({ ...f, [k]: v }));
+    setErrors((e) => ({ ...e, [k]: "" }));
+  };
+
+  const handleImageChange = (file) => {
+    handleChange("profile_image", file);
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+        localStorage.setItem(IMAGE_KEY, reader.result); // Save to localStorage
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const validate = () => {
+    let tempErrors = {};
+    if (!form.first_name.trim()) tempErrors.first_name = "First name is required.";
+    if (!form.last_name.trim()) tempErrors.last_name = "Last name is required.";
+    if (!form.mobile_number.trim()) tempErrors.mobile_number = "Mobile number is required.";
+    return tempErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
     setLoading(true);
     setMsg("");
-
     try {
       const formData = new FormData();
-      // Always include email from logged in user
       formData.append("email", user.email);
-
       for (const key in form) {
         if (form[key]) formData.append(key, form[key]);
       }
@@ -97,6 +134,7 @@ export default function ProfilePage() {
         <div className="profile-card">
           <img
             src={
+              imagePreview ||
               profile.profile_image ||
               `https://ui-avatars.com/api/?name=${profile.first_name || "U"}`
             }
@@ -115,7 +153,7 @@ export default function ProfilePage() {
           </button>
         </div>
       ) : (
-        <form className="profile-form" onSubmit={handleSubmit}>
+        <form className="profile-form" onSubmit={handleSubmit} noValidate>
           <label>
             First Name
             <input
@@ -123,6 +161,7 @@ export default function ProfilePage() {
               value={form.first_name}
               onChange={(e) => handleChange("first_name", e.target.value)}
             />
+            {errors.first_name && <small style={{ color: "red" }}>{errors.first_name}</small>}
           </label>
           <label>
             Last Name
@@ -131,6 +170,7 @@ export default function ProfilePage() {
               value={form.last_name}
               onChange={(e) => handleChange("last_name", e.target.value)}
             />
+            {errors.last_name && <small style={{ color: "red" }}>{errors.last_name}</small>}
           </label>
           <label>
             Mobile
@@ -139,6 +179,7 @@ export default function ProfilePage() {
               value={form.mobile_number}
               onChange={(e) => handleChange("mobile_number", e.target.value)}
             />
+            {errors.mobile_number && <small style={{ color: "red" }}>{errors.mobile_number}</small>}
           </label>
           <label>
             Bio
@@ -159,9 +200,14 @@ export default function ProfilePage() {
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => handleChange("profile_image", e.target.files[0])}
+              onChange={(e) => handleImageChange(e.target.files[0])}
             />
           </label>
+          {imagePreview && (
+            <div style={{ margin: "10px 0" }}>
+              <img src={imagePreview} alt="Preview" style={{ width: "100px", borderRadius: "50%" }} />
+            </div>
+          )}
 
           <button type="submit" className="btn" disabled={loading}>
             {loading

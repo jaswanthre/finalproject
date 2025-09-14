@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Routes, Route } from "react-router-dom";
+
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -26,7 +28,13 @@ import VerifyNgo from "./pages/VerifyNgo";
 import DonorCampaignList from "./pages/DonorCampaignList";
 import DonationForm from "./pages/DonationForm";
 
+// Import chatbot
+import ChatWidget from "./pages/ChatWidget";
+import "./App.css";  // merged styles or additional ones for chatbot
+
 export default function App() {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <AuthProvider>
       <WalletProvider>
@@ -42,11 +50,9 @@ export default function App() {
               {/* Donor routes */}
               <Route element={<ProtectedRoute roles={[3]} />}>
                 <Route path="/donor" element={<DonorDashboard />} />
-                {/* <Route path="/my-profile" element={<ProfilePage />} /> */}
                 <Route path="/my-donations" element={<MyDonations />} />
                 <Route path="/my-transactions" element={<MyTransactions />} />
                 <Route path="/my-wallet" element={<MyWallet />} />
-
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />
                 <Route path="/donation-success" element={<DonationSuccess />} />
                 <Route path="/d-campaigns" element={<DonorCampaignList />} />
@@ -58,11 +64,9 @@ export default function App() {
                 <Route path="/ngo" element={<NgoDashboard />} />
                 <Route path="/create-campaign" element={<CreateCampaign />} />
                 <Route path="/my-campaigns" element={<MyCampaigns />} />
-
                 <Route path="/campaigns" element={<CampaignList />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />
                 <Route path="/VerifyNgo" element={<VerifyNgo />} />
-                {/* <Route path="/my-profile" element={<ProfilePage />} /> */}
               </Route>
 
               {/* Admin routes */}
@@ -82,18 +86,33 @@ export default function App() {
                     className="container"
                     style={{ padding: "4rem 0", textAlign: "center" }}
                   >
-                    <h2 style={{ color: "var(--text-muted)" }}>
-                      404 - Page Not Found
-                    </h2>
-                    <p
-                      style={{ color: "var(--text-muted)", marginTop: "1rem" }}
-                    >
+                    <h2 style={{ color: "var(--text-muted)" }}>404 - Page Not Found</h2>
+                    <p style={{ color: "var(--text-muted)", marginTop: "1rem" }}>
                       The page you're looking for doesn't exist.
                     </p>
                   </div>
                 }
               />
             </Routes>
+
+            {/* Chat Widget Button */}
+            <div className="chat-container">
+              {!isOpen && (
+                <button className="chat-toggle-btn" onClick={() => setIsOpen(true)}>
+                  💬
+                </button>
+              )}
+              <div className={`chat-widget-container ${isOpen ? "open" : "closed"}`}>
+                {isOpen && (
+                  <div className="chat-widget-wrapper">
+                    <ChatWidget />
+                    <button className="close-btn" onClick={() => setIsOpen(false)}>
+                      ✖
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </main>
           <Footer />
         </div>

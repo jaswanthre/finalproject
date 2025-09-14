@@ -9,7 +9,10 @@
   align-items: center;
   justify-content: center;
 }
- 
+.h1im{
+  width: 80%;
+  height: auto;
+}
 .hero-overlay {
   background: rgba(0, 0, 0, 0.55);
   padding: 40px;

@@ -59,9 +59,9 @@ export default function Header() {
               <Link to="/my-donations" className={isActive("/my-donations")}>
                 My Donations
               </Link>
-              <Link to="/my-wallet" className={isActive("/my-wallet")}>
+              {/* <Link to="/my-wallet" className={isActive("/my-wallet")}>
                 My Wallet
-              </Link>
+              </Link> */}
             </>
           )}
 

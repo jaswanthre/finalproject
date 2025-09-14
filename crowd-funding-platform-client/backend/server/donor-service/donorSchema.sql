@@ -16,5 +16,11 @@ CREATE TABLE transactions (
     payment_gateway VARCHAR(100),
     transaction_status VARCHAR(20) DEFAULT 'PENDING' -- PENDING, SUCCESS, FAILED
 );
+ALTER TABLE donations
+ADD CONSTRAINT chk_payment_status CHECK (payment_status IN ('PENDING', 'SUCCESS', 'FAILED'));
+
+ALTER TABLE transactions
+ADD CONSTRAINT chk_transaction_status CHECK (transaction_status IN ('PENDING', 'SUCCESS', 'FAILED'));
+
 
 
