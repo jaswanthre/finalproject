@@ -1,0 +1,31 @@
+.ngo-dashboard {
+  padding: 2rem 0;
+  min-height: 80vh;
+}
+
+/* Different header gradient for NGO */
+.ngo-dashboard .dashboard-header {
+  background: linear-gradient(135deg, #11998e, #38ef7d);
+}
+
+.ngo-dashboard .dashboard-card h2::after {
+  background: linear-gradient(90deg, #11998e, #38ef7d);
+}
+
+.ngo-dashboard .quick-link {
+  border-left: 4px solid #11998e;
+}
+
+.ngo-dashboard .quick-link-icon {
+  color: #11998e;
+}
+
+.ngo-dashboard .btn-sm,
+.ngo-dashboard .view-all-btn {
+  background: linear-gradient(135deg, #11998e, #38ef7d);
+}
+
+.ngo-dashboard .btn-sm:hover,
+.ngo-dashboard .view-all-btn:hover {
+  background: linear-gradient(135deg, #38ef7d, #11998e);
+}

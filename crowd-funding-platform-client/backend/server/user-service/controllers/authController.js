@@ -41,9 +41,11 @@ export const login = async (req, res) => {
     // Return token + email + role
     res.json({
       success: true,
+      id: user.id,
       token,
       email: user.email,
       role: user.role_id, // ✅ Added role so frontend doesn’t need jwt-decode
+      is_verified: user.is_verified,
     });
   } catch (error) {
     console.error("Login Error:", error);

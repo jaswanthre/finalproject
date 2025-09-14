@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-// import CampaignCard from "../components/CampaignCard";
+import { useNavigate } from "react-router-dom";
 import ProgressBar from "../components/ProgressBar";
+import "../styles/DonorCampaignList.css";
 
-export default function CampaignList() {
+export default function DonorCampaignList() {
+  const navigate = useNavigate();
   const [list, setList] = useState([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -20,8 +22,6 @@ export default function CampaignList() {
 
         if (Array.isArray(data)) {
           setList(data);
-
-          // ✅ Extract unique cities from backend
           const uniqueCities = [
             ...new Set(data.map((c) => c.city || "Unknown")),
           ];
@@ -58,7 +58,7 @@ export default function CampaignList() {
 
   return (
     <div className="container">
-      {/* ✅ Heading */}
+      {/* Hero section */}
       <div
         style={{
           textAlign: "center",
@@ -101,7 +101,7 @@ export default function CampaignList() {
         </div>
       </div>
 
-      {/* ✅ Toolbar */}
+      {/* Toolbar */}
       <div className="toolbar">
         <div className="search-wrapper">
           <input
@@ -140,7 +140,7 @@ export default function CampaignList() {
         </div>
       </div>
 
-      {/* ✅ Campaign Grid */}
+      {/* Campaign list */}
       {filtered.length === 0 ? (
         <div className="empty-state">
           <h3>No campaigns found</h3>
@@ -190,16 +190,30 @@ export default function CampaignList() {
                   </div>
 
                   <div className="card-actions">
-                    <span
-                      style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}
-                    >
-                      Goal: ₹{Number(c.target_amount || 0).toLocaleString()}
-                    </span>
                     <button
                       onClick={() => setSelectedCampaign(c)}
                       className="btn btn-orange"
                     >
                       View Details
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        navigate(`/donate/${c.campaign_id}`, {
+                          state: {
+                            campaignId: c.campaign_id,
+                            campaignTitle: c.title,
+                            campaignImage: c.campaign_image,
+                            ngoEmail: c.ngo_email,
+                            goalAmount: c.target_amount,
+                            raisedAmount: c.raised_amount,
+                            location: c.city,
+                          },
+                        })
+                      }
+                      className="btn btn-green"
+                    >
+                      Donate Now
                     </button>
                   </div>
                 </div>
@@ -209,7 +223,7 @@ export default function CampaignList() {
         </div>
       )}
 
-      {/* ✅ Modal for campaign details */}
+      {/* Modal for details */}
       {selectedCampaign && (
         <div className="modal-overlay">
           <div className="modal-content">

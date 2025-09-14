@@ -1,65 +1,6 @@
 import pool from "../db/db.js";
 import { uploadToS3 } from "../middleware/uploadMiddleware.js";
 
-// Mock data for campaigns when database is not available
-const mockCampaigns = [
-  {
-    campaign_id: "1",
-    title: "Clean Water Initiative",
-    description: "Providing clean drinking water to rural communities in need.",
-    ngo_name: "WaterCare Foundation",
-    image_url: "https://images.unsplash.com/photo-1581152201225-5c2864dafec1?q=80&w=1000&auto=format&fit=crop",
-    goal_amount: 500000,
-    raised_amount: 325000,
-    location: "Rural Districts",
-    start_date: "2023-01-01",
-    end_date: "2023-12-31",
-    status: "ACTIVE"
-  },
-  {
-    campaign_id: "2",
-    title: "Education for All",
-    description: "Supporting education for underprivileged children by providing school supplies and scholarships.",
-    ngo_name: "EduCare Trust",
-    image_url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1000&auto=format&fit=crop",
-    goal_amount: 750000,
-    raised_amount: 420000,
-    location: "Urban Schools",
-    start_date: "2023-02-15",
-    end_date: "2023-11-30",
-    status: "ACTIVE"
-  },
-  {
-    campaign_id: "3",
-    title: "Healthcare Access Program",
-    description: "Providing medical services to underserved communities through mobile clinics.",
-    ngo_name: "Health For All",
-    image_url: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=1000&auto=format&fit=crop",
-    goal_amount: 1000000,
-    raised_amount: 650000,
-    location: "Rural Health Centers",
-    start_date: "2023-03-10",
-    end_date: "2024-03-10",
-    status: "ACTIVE"
-  }
-];
-
-// Mock campaign comments/updates
-const mockComments = {
-  "1": [
-    { update_id: 1, update_date: "2023-06-15", update_text: "First water purification system installed successfully!" },
-    { update_id: 2, update_date: "2023-07-20", update_text: "Reached 500 families with clean water access." }
-  ],
-  "2": [
-    { update_id: 1, update_date: "2023-05-10", update_text: "Distributed school supplies to 500 students." },
-    { update_id: 2, update_date: "2023-08-01", update_text: "Awarded 50 scholarships to deserving students." }
-  ],
-  "3": [
-    { update_id: 1, update_date: "2023-04-05", update_text: "First mobile clinic launched successfully." },
-    { update_id: 2, update_date: "2023-06-30", update_text: "Provided medical services to over 1000 patients." }
-  ]
-};
-
 export const createCampaign = async (req, res) => {
   try {
     const {
@@ -74,42 +15,22 @@ export const createCampaign = async (req, res) => {
     let imageUrl = null;
     if (req.file) imageUrl = await uploadToS3(req.file, "campaigns");
 
-    try {
-      const result = await pool.query(
-        `INSERT INTO campaigns 
-         (ngo_email,title,description,target_amount,start_date,end_date,city,campaign_image) 
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-        [
-          ngo_email,
-          title,
-          description,
-          target_amount,
-          start_date,
-          end_date,
-          city,
-          imageUrl,
-        ]
-      );
-      res.json(result.rows[0]);
-    } catch (dbErr) {
-      // If database fails, return mock response
-      console.error("Database error, using mock data:", dbErr.message);
-      const newCampaign = {
-        campaign_id: Date.now().toString(),
+    const result = await pool.query(
+      `INSERT INTO campaigns 
+       (ngo_email,title,description,target_amount,start_date,end_date,city,campaign_image) 
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [
         ngo_email,
         title,
         description,
-        goal_amount: target_amount,
-        raised_amount: 0,
+        target_amount,
         start_date,
         end_date,
-        location: city,
-        image_url: imageUrl || "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6",
-        status: "ACTIVE"
-      };
-      mockCampaigns.push(newCampaign);
-      res.json(newCampaign);
-    }
+        city,
+        imageUrl,
+      ]
+    );
+    res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -117,14 +38,8 @@ export const createCampaign = async (req, res) => {
 
 export const getCampaigns = async (req, res) => {
   try {
-    try {
-      const r = await pool.query("SELECT * FROM campaigns");
-      res.json(r.rows);
-    } catch (dbErr) {
-      // If database fails, return mock data
-      console.error("Database error, using mock data:", dbErr.message);
-      res.json(mockCampaigns);
-    }
+    const r = await pool.query("SELECT * FROM campaigns");
+    res.json(r.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -132,94 +47,193 @@ export const getCampaigns = async (req, res) => {
 
 export const getCampaignById = async (req, res) => {
   try {
-    try {
-      const r = await pool.query("SELECT * FROM campaigns WHERE campaign_id=$1", [
-        req.params.id,
-      ]);
-      if (!r.rows.length)
-        return res.status(404).json({ error: "Campaign not found" });
-      res.json(r.rows[0]);
-    } catch (dbErr) {
-      // If database fails, return mock data
-      console.error("Database error, using mock data:", dbErr.message);
-      const campaign = mockCampaigns.find(c => c.campaign_id === req.params.id);
-      if (!campaign) return res.status(404).json({ error: "Campaign not found" });
-      res.json(campaign);
-    }
+    const r = await pool.query("SELECT * FROM campaigns WHERE campaign_id=$1", [
+      req.params.id,
+    ]);
+    if (!r.rows.length)
+      return res.status(404).json({ error: "Campaign not found" });
+    res.json(r.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-
-// Use comments as updates for now
-export const getCommentsByCampaign = async (req, res) => {
-  try {
-    try {
-      const r = await pool.query(
-        "SELECT * FROM campaign_comments WHERE campaign_id=$1",
-        [req.params.id || req.params.campaign_id]
-      );
-      res.json(r.rows);
-    } catch (dbErr) {
-      // If database fails, return mock data
-      console.error("Database error, using mock data:", dbErr.message);
-      const campaignId = req.params.id || req.params.campaign_id;
-      const updates = mockComments[campaignId] || [];
-      res.json(updates);
-    }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// Keep other controller methods but add mock data fallbacks
 
 export const updateCampaign = async (req, res) => {
-  // Implementation with mock data fallback
-  res.json({ message: "Update functionality available in production version" });
+  try {
+    const {
+      title,
+      description,
+      target_amount,
+      raised_amount,
+      status,
+      end_date,
+      city,
+    } = req.body;
+    let imageUrl = null;
+    if (req.file) imageUrl = await uploadToS3(req.file, "campaigns");
+
+    const r = await pool.query(
+      `UPDATE campaigns SET title=$1, description=$2, target_amount=$3, raised_amount=$4,
+       status=$5, end_date=$6, city=$7, campaign_image=COALESCE($8,campaign_image), updated_at=NOW()
+       WHERE campaign_id=$9 RETURNING *`,
+      [
+        title,
+        description,
+        target_amount,
+        raised_amount,
+        status,
+        end_date,
+        city,
+        imageUrl,
+        req.params.id,
+      ]
+    );
+    if (!r.rows.length)
+      return res.status(404).json({ error: "Campaign not found" });
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const deleteCampaign = async (req, res) => {
-  // Implementation with mock data fallback
-  res.json({ message: "Delete functionality available in production version" });
+  try {
+    await pool.query("DELETE FROM campaigns WHERE campaign_id=$1", [
+      req.params.id,
+    ]);
+    res.json({ message: "Campaign deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+export const getCampaignsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const r = await pool.query(
+      "SELECT * FROM campaigns WHERE ngo_email = $1 ORDER BY created_at DESC",
+      [email]
+    );
+
+    if (!r.rows.length) {
+      return res.json({ success: true, campaigns: [] });
+    }
+
+    res.json({ success: true, campaigns: r.rows });
+  } catch (err) {
+    console.error("Error fetching NGO campaigns:", err.message);
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const createCategory = async (req, res) => {
-  // Implementation with mock data fallback
-  res.json({ message: "Category creation available in production version" });
+  try {
+    const { category_name, description } = req.body;
+    const r = await pool.query(
+      "INSERT INTO campaign_categories (category_name,description) VALUES ($1,$2) RETURNING *",
+      [category_name, description]
+    );
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const getCategories = async (req, res) => {
-  // Implementation with mock data fallback
-  res.json([{ category_id: 1, category_name: "Health" }, { category_id: 2, category_name: "Education" }]);
+  try {
+    const r = await pool.query("SELECT * FROM campaign_categories");
+    res.json(r.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const mapCampaignCategory = async (req, res) => {
-  // Implementation with mock data fallback
-  res.json({ message: "Category mapping available in production version" });
+  try {
+    const { campaign_id, category_id } = req.body;
+    const r = await pool.query(
+      "INSERT INTO campaign_category_map (campaign_id,category_id) VALUES ($1,$2) RETURNING *",
+      [campaign_id, category_id]
+    );
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const addMedia = async (req, res) => {
-  // Implementation with mock data fallback
-  res.json({ message: "Media upload available in production version" });
+  try {
+    const { campaign_id, media_type } = req.body;
+    let mediaUrl = null;
+    if (req.file) mediaUrl = await uploadToS3(req.file, "campaign_media");
+
+    const r = await pool.query(
+      "INSERT INTO campaign_media (campaign_id,media_url,media_type) VALUES ($1,$2,$3) RETURNING *",
+      [campaign_id, mediaUrl, media_type]
+    );
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const getMediaByCampaign = async (req, res) => {
-  // Implementation with mock data fallback
-  res.json([]);
+  try {
+    const r = await pool.query(
+      "SELECT * FROM campaign_media WHERE campaign_id=$1",
+      [req.params.campaign_id]
+    );
+    res.json(r.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const createDonation = async (req, res) => {
-  // Implementation with mock data fallback
-  res.json({ message: "Donation creation available in production version" });
+  try {
+    const { campaign_id, donor_email, amount, payment_method } = req.body;
+    const r = await pool.query(
+      "INSERT INTO donations (campaign_id,donor_email,amount,payment_method,payment_status) VALUES ($1,$2,$3,$4,'PENDING') RETURNING *",
+      [campaign_id, donor_email, amount, payment_method]
+    );
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const getDonationsByCampaign = async (req, res) => {
-  // Implementation with mock data fallback
-  res.json([]);
+  try {
+    const r = await pool.query("SELECT * FROM donations WHERE campaign_id=$1", [
+      req.params.campaign_id,
+    ]);
+    res.json(r.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const addComment = async (req, res) => {
-  // Implementation with mock data fallback
-  res.json({ message: "Comment creation available in production version" });
+  try {
+    const { campaign_id, user_email, comment_text } = req.body;
+    const r = await pool.query(
+      "INSERT INTO campaign_comments (campaign_id,user_email,comment_text) VALUES ($1,$2,$3) RETURNING *",
+      [campaign_id, user_email, comment_text]
+    );
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getCommentsByCampaign = async (req, res) => {
+  try {
+    const r = await pool.query(
+      "SELECT * FROM campaign_comments WHERE campaign_id=$1",
+      [req.params.campaign_id]
+    );
+    res.json(r.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

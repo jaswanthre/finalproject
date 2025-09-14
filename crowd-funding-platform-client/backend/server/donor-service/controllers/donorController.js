@@ -1,44 +1,22 @@
-// import pool from "../db/index.js";
-
-// Mock database for testing
-const mockDonations = [
-  {
-    donation_id: "123e4567-e89b-12d3-a456-426614174000",
-    campaign_id: "223e4567-e89b-12d3-a456-426614174001",
-    donor_email: "test@example.com",
-    amount: 100.00,
-    payment_method: "Credit Card",
-    payment_status: "SUCCESS",
-    created_at: "2023-06-15T10:30:00Z"
-  },
-  {
-    donation_id: "223e4567-e89b-12d3-a456-426614174002",
-    campaign_id: "223e4567-e89b-12d3-a456-426614174001",
-    donor_email: "donor@example.com",
-    amount: 50.00,
-    payment_method: "PayPal",
-    payment_status: "SUCCESS",
-    created_at: "2023-06-16T14:20:00Z"
-  }
-];
+import pool from "../db/db.js";
 
 export const createDonation = async (req, res) => {
   try {
     const { campaign_id, donor_email, amount, payment_method } = req.body;
-    
-    // Mock implementation
-    const newDonation = {
-      donation_id: `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-      campaign_id,
-      donor_email,
-      amount,
-      payment_method,
-      payment_status: "SUCCESS",
-      created_at: new Date().toISOString()
-    };
-    
-    mockDonations.push(newDonation);
-    res.status(201).json(newDonation);
+
+    const donation = await pool.query(
+      `INSERT INTO donations (campaign_id, donor_email, amount, payment_method) 
+       VALUES ($1,$2,$3,$4) RETURNING *`,
+      [campaign_id, donor_email, amount, payment_method]
+    );
+
+    // update campaign raised_amount
+    await pool.query(
+      `UPDATE campaigns SET raised_amount = raised_amount + $1 WHERE campaign_id=$2`,
+      [amount, campaign_id]
+    );
+
+    res.status(201).json(donation.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -46,16 +24,12 @@ export const createDonation = async (req, res) => {
 
 export const getDonation = async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    // Mock implementation
-    const donation = mockDonations.find(d => d.donation_id === id);
-    
-    if (!donation) {
+    const r = await pool.query("SELECT * FROM donations WHERE donation_id=$1", [
+      req.params.id,
+    ]);
+    if (!r.rows.length)
       return res.status(404).json({ error: "Donation not found" });
-    }
-    
-    res.json(donation);
+    res.json(r.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -63,18 +37,14 @@ export const getDonation = async (req, res) => {
 
 export const updateDonationStatus = async (req, res) => {
   try {
-    const { id } = req.params;
     const { payment_status } = req.body;
-    
-    // Mock implementation
-    const donationIndex = mockDonations.findIndex(d => d.donation_id === id);
-    
-    if (donationIndex === -1) {
+    const r = await pool.query(
+      "UPDATE donations SET payment_status=$1 WHERE donation_id=$2 RETURNING *",
+      [payment_status, req.params.id]
+    );
+    if (!r.rows.length)
       return res.status(404).json({ error: "Donation not found" });
-    }
-    
-    mockDonations[donationIndex].payment_status = payment_status;
-    res.json(mockDonations[donationIndex]);
+    res.json(r.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -82,32 +52,31 @@ export const updateDonationStatus = async (req, res) => {
 
 export const deleteDonation = async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    // Mock implementation
-    const donationIndex = mockDonations.findIndex(d => d.donation_id === id);
-    
-    if (donationIndex === -1) {
+    const r = await pool.query(
+      "DELETE FROM donations WHERE donation_id=$1 RETURNING *",
+      [req.params.id]
+    );
+    if (!r.rows.length)
       return res.status(404).json({ error: "Donation not found" });
-    }
-    
-    const deletedDonation = mockDonations.splice(donationIndex, 1)[0];
-    res.json(deletedDonation);
+    res.json({ message: "Deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-
-export const getDonationsByDonorEmail = async (req, res) => {
+export const getDonationsByEmail = async (req, res) => {
   try {
-    const { donor_email } = req.query;
-    if (!donor_email) {
-      return res.status(400).json({ error: "Donor email is required" });
-    }
-    
-    // Mock implementation
-    const donations = mockDonations.filter(d => d.donor_email === donor_email);
-    res.json(donations);
+    const { email } = req.params;
+
+    const r = await pool.query(
+      `SELECT d.*, c.title AS campaign_title, c.campaign_image, c.city, c.ngo_email
+       FROM donations d
+       JOIN campaigns c ON d.campaign_id = c.campaign_id
+       WHERE d.donor_email = $1
+       ORDER BY d.created_at DESC`,
+      [email]
+    );
+
+    res.json(r.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

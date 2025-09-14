@@ -15,19 +15,14 @@ import {
   getDonationsByCampaign,
   addComment,
   getCommentsByCampaign,
+  getCampaignsByEmail,
 } from "../controllers/campaignController.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Main campaign routes - match frontend API calls
-router.post("/", upload.single("campaign_image"), createCampaign);
-router.get("/", getCampaigns);
-router.get("/:id", getCampaignById);
-router.put("/:id", upload.single("campaign_image"), updateCampaign);
-router.delete("/:id", deleteCampaign);
+router.get("/campaigns/email/:email", getCampaignsByEmail);
 
-// Legacy routes for backward compatibility
 router.post("/campaigns", upload.single("campaign_image"), createCampaign);
 router.get("/campaigns", getCampaigns);
 router.get("/campaigns/:id", getCampaignById);
@@ -46,8 +41,5 @@ router.get("/donations/:campaign_id", getDonationsByCampaign);
 
 router.post("/comments", addComment);
 router.get("/comments/:campaign_id", getCommentsByCampaign);
-
-// Campaign updates endpoint
-router.get("/:id/updates", getCommentsByCampaign); // Temporarily using comments as updates
 
 export default router;

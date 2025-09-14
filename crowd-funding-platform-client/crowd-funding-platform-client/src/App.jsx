@@ -1,11 +1,9 @@
-
 import { Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { WalletProvider } from "./context/WalletContext";
 import { AuthProvider } from "./context/AuthContext";
-
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -16,11 +14,17 @@ import DonorDashboard from "./pages/DonorDashboard";
 import NgoDashboard from "./pages/NgoDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import HeroSection from "./pages/HeroSection";
-import Profile from "./pages/Profile";
+
 import MyDonations from "./pages/MyDonations";
 import MyTransactions from "./pages/MyTransactions";
 import DonationSuccess from "./pages/DonationSuccess";
 import MyWallet from "./pages/MyWallet";
+import MyCampaigns from "./pages/MyCampaigns";
+import Profile from "./pages/Profile";
+import ProfilePage from "./pages/ProfilePage";
+import VerifyNgo from "./pages/VerifyNgo";
+import DonorCampaignList from "./pages/DonorCampaignList";
+import DonationForm from "./pages/DonationForm";
 
 export default function App() {
   return (
@@ -38,38 +42,52 @@ export default function App() {
               {/* Donor routes */}
               <Route element={<ProtectedRoute roles={[3]} />}>
                 <Route path="/donor" element={<DonorDashboard />} />
-                <Route path="/profile" element={<Profile />} />
+                {/* <Route path="/my-profile" element={<ProfilePage />} /> */}
                 <Route path="/my-donations" element={<MyDonations />} />
                 <Route path="/my-transactions" element={<MyTransactions />} />
                 <Route path="/my-wallet" element={<MyWallet />} />
-                
-              <Route path="/campaigns/:id" element={<CampaignDetail />} />
-              <Route path="/donation-success" element={<DonationSuccess />} />
-                            <Route path="/campaigns" element={<CampaignList />} />
 
+                <Route path="/campaigns/:id" element={<CampaignDetail />} />
+                <Route path="/donation-success" element={<DonationSuccess />} />
+                <Route path="/d-campaigns" element={<DonorCampaignList />} />
+                <Route path="/donate/:id" element={<DonationForm />} />
               </Route>
 
               {/* NGO routes */}
               <Route element={<ProtectedRoute roles={[2]} />}>
                 <Route path="/ngo" element={<NgoDashboard />} />
                 <Route path="/create-campaign" element={<CreateCampaign />} />
-                
-              <Route path="/campaigns" element={<CampaignList />} />
-              <Route path="/campaigns/:id" element={<CampaignDetail />} />
+                <Route path="/my-campaigns" element={<MyCampaigns />} />
+
+                <Route path="/campaigns" element={<CampaignList />} />
+                <Route path="/campaigns/:id" element={<CampaignDetail />} />
+                <Route path="/VerifyNgo" element={<VerifyNgo />} />
+                {/* <Route path="/my-profile" element={<ProfilePage />} /> */}
               </Route>
 
               {/* Admin routes */}
               <Route element={<ProtectedRoute roles={[1]} />}>
                 <Route path="/admin" element={<AdminDashboard />} />
               </Route>
+              <Route element={<ProtectedRoute roles={[1, 2, 3]} />}>
+                <Route path="/my-profile" element={<ProfilePage />} />
+                <Route path="/campaigns" element={<CampaignList />} />
+              </Route>
 
               {/* 404 Page */}
               <Route
                 path="*"
                 element={
-                  <div className="container" style={{ padding: "4rem 0", textAlign: "center" }}>
-                    <h2 style={{ color: "var(--text-muted)" }}>404 - Page Not Found</h2>
-                    <p style={{ color: "var(--text-muted)", marginTop: "1rem" }}>
+                  <div
+                    className="container"
+                    style={{ padding: "4rem 0", textAlign: "center" }}
+                  >
+                    <h2 style={{ color: "var(--text-muted)" }}>
+                      404 - Page Not Found
+                    </h2>
+                    <p
+                      style={{ color: "var(--text-muted)", marginTop: "1rem" }}
+                    >
                       The page you're looking for doesn't exist.
                     </p>
                   </div>
@@ -81,6 +99,5 @@ export default function App() {
         </div>
       </WalletProvider>
     </AuthProvider>
-
   );
 }
