@@ -1083,7 +1083,7 @@ a.underline-link:hover::after {
   font-size: 2rem;
   margin-bottom: 0.75rem;
   text-align: center;
-  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, #f1f5f9 0%, #f1f5f9 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1141,23 +1141,29 @@ a.underline-link:hover::after {
   cursor: not-allowed;
 }
 
+/* Normal Static Loading Bar */
 .loading-spinner {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
+  width: 140px;
+  height: 8px;
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  position: relative;
+  overflow: hidden;
 }
 
 .loading-spinner::before {
-  content: '';
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  margin-right: 0.5rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: var(--accent-orange);
+  border-radius: inherit;
 }
+
+
 
 .auth-form .form-msg,
 .form-msg {

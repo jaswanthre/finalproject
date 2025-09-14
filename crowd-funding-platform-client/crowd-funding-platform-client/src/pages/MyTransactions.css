@@ -60,11 +60,48 @@
   background-color: #45a049;
 }
 
+/* Normal Static Loading Bar */
 .loading-spinner {
-  text-align: center;
-  padding: 2rem 0;
-  color: #666;
+  display: inline-block;
+  width: 140px;
+  height: 8px;
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  position: relative;
+  overflow: hidden;
 }
+
+.loading-spinner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: var(--accent-orange);
+  border-radius: inherit;
+}
+
+
+@keyframes loadingBar {
+  0% { left: -40%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6); /* dark overlay for better contrast */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
 
 .no-transactions {
   text-align: center;

@@ -14,6 +14,7 @@ const HeroSection = () => {
       <div className="hero-overlay">
         <img src={heroimage} alt="" className="h1im"/>
       </div>
+
     </div>
   );
 };
