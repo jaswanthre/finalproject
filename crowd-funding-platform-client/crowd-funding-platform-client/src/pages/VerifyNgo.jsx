@@ -18,6 +18,7 @@ export default function VerifyNgo() {
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(true);
 
   // 🔹 Fetch current verification status
   useEffect(() => {
@@ -34,6 +35,13 @@ export default function VerifyNgo() {
             headers: { Authorization: `Bearer ${user.token}` },
           }
         );
+
+        if (res.status === 401) {
+          setMsg("Session expired. Please log in again.");
+          navigate("/login");
+          return;
+        }
+
         if (res.ok) {
           const data = await res.json();
           setStatus(data.status || "NONE");
@@ -41,6 +49,9 @@ export default function VerifyNgo() {
         }
       } catch (err) {
         console.error("Error fetching verification:", err);
+        setMsg("Unable to fetch verification status.");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -51,10 +62,11 @@ export default function VerifyNgo() {
   const handleFileChange = (e, key) => {
     const file = e.target.files[0];
     if (file && file.size > 5 * 1024 * 1024) {
-      setMsg("File size exceeds 5MB");
+      setMsg("⚠️ File size exceeds 5MB");
       return;
     }
     setFiles((prev) => ({ ...prev, [key]: file }));
+    setMsg("");
   };
 
   // 🔹 Submit verification docs
@@ -66,7 +78,7 @@ export default function VerifyNgo() {
       !files.bank_proof ||
       !files.id_proof
     ) {
-      setMsg("Please upload all required documents.");
+      setMsg("⚠️ Please upload all required documents.");
       return;
     }
 
@@ -88,13 +100,13 @@ export default function VerifyNgo() {
 
       if (res.ok) {
         setStatus("PENDING");
-        setMsg("Verification submitted successfully!");
+        setMsg("✅ Verification submitted successfully!");
       } else {
-        setMsg("Failed to submit verification.");
+        setMsg("❌ Failed to submit verification.");
       }
     } catch (err) {
       console.error("Error submitting verification:", err);
-      setMsg("An error occurred.");
+      setMsg("❌ An error occurred.");
     } finally {
       setIsSubmitting(false);
     }
@@ -106,97 +118,120 @@ export default function VerifyNgo() {
         <div className="verify-title">
           <h1>NGO Verification</h1>
           <p>
-            Submit documents to verify your NGO status and start creating
-            campaigns.
+            Upload your required documents to verify NGO status and unlock
+            campaign creation.
           </p>
         </div>
 
-        {status === "PENDING" && (
-          <div className="status-pending">
-            <div className="status-icon">⏳</div>
-            <h2>Verification in Progress</h2>
-            <p>
-              Your application is under review. Please wait for admin approval.
-            </p>
-          </div>
-        )}
-
-        {status === "APPROVED" && (
-          <div className="status-approved">
-            <div className="status-icon">✅</div>
-            <h2>Verified Successfully</h2>
-            <p>
-              Your NGO is approved. You can now create campaigns and receive
-              donations.
-            </p>
-          </div>
-        )}
-
-        {status === "REJECTED" && (
-          <div className="status-rejected">
-            <div className="status-icon">❌</div>
-            <h2>Verification Rejected</h2>
-            <p>
-              {feedback ||
-                "Your documents were rejected. Please re-submit correct ones."}
-            </p>
-          </div>
-        )}
-
-        {status === "NONE" && (
-          <form className="verify-form" onSubmit={handleSubmit}>
-            <div className="document-grid">
-              {/* NGO Certificate */}
-              <div className="document-card">
-                <h3>NGO Registration Certificate</h3>
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => handleFileChange(e, "ngo_registration_doc")}
-                />
+        {loading ? (
+          <div className="loading-section">Loading verification status...</div>
+        ) : (
+          <>
+            {status === "PENDING" && (
+              <div className="status-card pending">
+                <div className="status-icon">⏳</div>
+                <h2>Verification in Progress</h2>
+                <p>
+                  Your application is under review. Please wait for admin
+                  approval.
+                </p>
               </div>
+            )}
 
-              {/* PAN Card */}
-              <div className="document-card">
-                <h3>PAN Card</h3>
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => handleFileChange(e, "pan_card")}
-                />
+            {status === "APPROVED" && (
+              <div className="status-card approved">
+                <div className="status-icon">✅</div>
+                <h2>Verified Successfully</h2>
+                <p>
+                  Your NGO is now verified. You can create campaigns and start
+                  receiving donations.
+                </p>
               </div>
+            )}
 
-              {/* Bank Proof */}
-              <div className="document-card">
-                <h3>Bank Proof</h3>
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => handleFileChange(e, "bank_proof")}
-                />
+            {status === "REJECTED" && (
+              <div className="status-card rejected">
+                <div className="status-icon">❌</div>
+                <h2>Verification Rejected</h2>
+                <p>
+                  {feedback ||
+                    "Your documents were rejected. Please re-submit correct ones."}
+                </p>
               </div>
+            )}
 
-              {/* ID Proof */}
-              <div className="document-card">
-                <h3>ID Proof</h3>
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => handleFileChange(e, "id_proof")}
-                />
-              </div>
-            </div>
+            {status === "NONE" && (
+              <form className="verify-form" onSubmit={handleSubmit}>
+                <div className="document-grid">
+                  {/* NGO Certificate */}
+                  <div className="document-card">
+                    <h3>NGO Registration Certificate</h3>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) =>
+                        handleFileChange(e, "ngo_registration_doc")
+                      }
+                    />
+                    {files.ngo_registration_doc && (
+                      <p className="file-name">
+                        📄 {files.ngo_registration_doc.name}
+                      </p>
+                    )}
+                  </div>
 
-            <button
-              type="submit"
-              className="submit-button"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Submitting..." : "Submit for Verification"}
-            </button>
+                  {/* PAN Card */}
+                  <div className="document-card">
+                    <h3>PAN Card</h3>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange(e, "pan_card")}
+                    />
+                    {files.pan_card && (
+                      <p className="file-name">📄 {files.pan_card.name}</p>
+                    )}
+                  </div>
 
-            {msg && <p className="message">{msg}</p>}
-          </form>
+                  {/* Bank Proof */}
+                  <div className="document-card">
+                    <h3>Bank Proof</h3>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange(e, "bank_proof")}
+                    />
+                    {files.bank_proof && (
+                      <p className="file-name">📄 {files.bank_proof.name}</p>
+                    )}
+                  </div>
+
+                  {/* ID Proof */}
+                  <div className="document-card">
+                    <h3>ID Proof</h3>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange(e, "id_proof")}
+                    />
+                    {files.id_proof && (
+                      <p className="file-name">📄 {files.id_proof.name}</p>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="submit-button"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit for Verification"}
+                </button>
+
+                {msg && <p className="form-message">{msg}</p>}
+              </form>
+            )}
+          </>
         )}
       </main>
     </div>

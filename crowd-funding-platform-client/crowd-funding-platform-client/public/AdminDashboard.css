@@ -970,32 +970,26 @@ tr:hover {
   border-left: 4px solid var(--warning);
 }
 
-/* Loading Spinner */
+/* Normal Static Loading Bar */
 .loading-spinner {
   display: inline-block;
-  width: 2rem;
-  height: 2rem;
-  border: 3px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  border-top-color: var(--accent-blue);
-  animation: spin 1s ease-in-out infinite;
+  width: 140px;
+  height: 8px;
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  position: relative;
+  overflow: hidden;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-overlay {
-  position: fixed;
+.loading-spinner::before {
+  content: "";
+  position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
+  width: 40%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+  background: var(--accent-orange);
+  border-radius: inherit;
 }
 
 /* Responsive Adjustments */

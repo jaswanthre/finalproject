@@ -52,7 +52,7 @@ function NgoDashboard() {
         <div>
           <h1 className="ngo-dashboard-title">NGO Dashboard</h1>
           <p className="ngo-dashboard-welcome">
-            Welcome back, <span className="user-email">{user?.email}</span>!
+            Welcome back <span className="user-email">{user?.name}</span>!
           </p>
         </div>
         <div className="ngo-dashboard-image">

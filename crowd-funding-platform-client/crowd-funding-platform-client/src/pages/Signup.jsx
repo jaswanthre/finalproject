@@ -109,7 +109,6 @@ export default function Signup() {
         </button>
 
         {error && <p className="error">{error}</p>}
-
         <p className="muted">
           Already have an account? <Link to="/login">Login</Link>
         </p>
