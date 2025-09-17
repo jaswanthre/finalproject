@@ -44,6 +44,7 @@ export const login = async (req, res) => {
       id: user.id,
       token,
       email: user.email,
+      name: user.name,
       role: user.role_id, // ✅ Added role so frontend doesn’t need jwt-decode
       is_verified: user.is_verified,
     });

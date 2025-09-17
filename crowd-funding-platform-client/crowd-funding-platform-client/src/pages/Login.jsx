@@ -25,10 +25,10 @@ export default function Login() {
       );
 
       if (res.data.success) {
-        const { token, id, email, role, is_verified } = res.data;
+        const { token, id, email, role,name, is_verified } = res.data;
 
         // Use AuthContext login function with proper user object structure
-        login({ token, id, email, role, is_verified });
+        login({ token, id, email, role,name, is_verified });
 
         // Navigate based on role (1 = Admin, 2 = NGO, 3 = Donor)
         console.log("Navigating to role:", role);

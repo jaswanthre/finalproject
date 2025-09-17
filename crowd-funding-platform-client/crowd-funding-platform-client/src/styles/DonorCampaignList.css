@@ -1,0 +1,78 @@
+/* DROPDOWN STYLES */
+
+/* Common container for dropdowns in toolbar */
+.toolbar .filter-wrapper {
+  display: flex;
+  align-items: center;
+  margin-right: 2rem;
+}
+
+/* Filter Labels */
+.filter-label {
+  margin-right: 0.5em;
+  color: var(--text-muted, #b0b8c1);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* Custom dropdown select style */
+.location-select,
+.campaign-type-select {
+  appearance: none; /* Remove default OS styling */
+  background: rgba(32, 38, 55, 0.85); /* Custom dark background */
+  color: #fff;
+  border: 1.5px solid #414866; /* Elegant border */
+  border-radius: 20px;
+  padding: 0.6em 2.4em 0.6em 1em;
+  font-size: 1.06rem;
+  outline: none;
+  cursor: pointer;
+  transition: border 0.22s, box-shadow 0.22s;
+  box-shadow: 0 2px 6px rgba(40,45,60,0.09);
+  margin-left: 0.5em;
+}
+
+/* Add a dropdown icon (▼) using a background SVG */
+.location-select,
+.campaign-type-select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,<svg width='24' height='24' viewBox='0 0 24 24' fill='white' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5H7z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 1em center;
+  background-size: 1em;
+}
+
+/* Focus and hover highlight for dropdown */
+.location-select:focus, .campaign-type-select:focus,
+.location-select:hover, .campaign-type-select:hover {
+  border-color: #ff9800;
+  box-shadow: 0 0 0 2px rgba(255,152,0,0.13);
+}
+
+/* Dropdown options styling (optional, but browsers may ignore some styles) */
+.location-select option, .campaign-type-select option {
+  background: #23293b;
+  color: #fff;
+  font-size: 1rem;
+}
+
+/* Responsive stacking for smaller screens */
+@media (max-width: 650px) {
+  .toolbar {
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  .toolbar .filter-wrapper {
+    margin-right: 0;
+    margin-bottom: 0.8rem;
+  }
+}
+
+/* Style for the container if you want spacing and alignment */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2.5rem;
+  margin-bottom: 2.2rem;
+  justify-content: center;
+  align-items: center;
+}

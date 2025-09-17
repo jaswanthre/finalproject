@@ -64,7 +64,7 @@ export default function App() {
                 <Route path="/ngo" element={<NgoDashboard />} />
                 <Route path="/create-campaign" element={<CreateCampaign />} />
                 <Route path="/my-campaigns" element={<MyCampaigns />} />
-                <Route path="/campaigns" element={<CampaignList />} />
+                {/* <Route path="/campaigns" element={<CampaignList />} /> */}
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />
                 <Route path="/VerifyNgo" element={<VerifyNgo />} />
               </Route>

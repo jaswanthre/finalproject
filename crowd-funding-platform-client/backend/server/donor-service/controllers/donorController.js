@@ -4,13 +4,13 @@ import crypto from "crypto";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Initialize Razorpay instance with keys from .env
+// Initialize Razorpay instance
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Create a new donation entry
+// Create a new donation entry - no raised_amount update here
 export const createDonation = async (req, res) => {
   try {
     const { campaign_id, donor_email, amount, payment_method } = req.body;
@@ -21,11 +21,7 @@ export const createDonation = async (req, res) => {
       [campaign_id, donor_email, amount, payment_method]
     );
 
-    // Update campaign's raised amount
-    await pool.query(
-      `UPDATE campaigns SET raised_amount = raised_amount + $1 WHERE campaign_id=$2`,
-      [amount, campaign_id]
-    );
+    // Do NOT update campaign raised_amount here since payment is initially PENDING
 
     res.status(201).json(donation.rows[0]);
   } catch (err) {
@@ -34,31 +30,45 @@ export const createDonation = async (req, res) => {
   }
 };
 
-// Retrieve donation by ID
-export const getDonation = async (req, res) => {
-  try {
-    const r = await pool.query("SELECT * FROM donations WHERE donation_id=$1", [
-      req.params.id,
-    ]);
-    if (!r.rows.length)
-      return res.status(404).json({ error: "Donation not found" });
-    res.json(r.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// Update donation payment status
+// Update donation payment status and adjust campaign's raised_amount accordingly
 export const updateDonationStatus = async (req, res) => {
   try {
     const { payment_status } = req.body;
+    const donationId = req.params.id;
+
+    // Fetch current donation to check current status and amount
+    const currentDonation = await pool.query(
+      "SELECT * FROM donations WHERE donation_id = $1",
+      [donationId]
+    );
+
+    if (!currentDonation.rows.length)
+      return res.status(404).json({ error: "Donation not found" });
+
+    const donation = currentDonation.rows[0];
+
+    // If changing status to SUCCESS from something else, add amount to campaign's raised_amount
+    if (payment_status === "SUCCESS" && donation.payment_status !== "SUCCESS") {
+      await pool.query(
+        `UPDATE campaigns SET raised_amount = raised_amount + $1 WHERE campaign_id = $2`,
+        [donation.amount, donation.campaign_id]
+      );
+    }
+
+    // If changing status from SUCCESS to something else, subtract amount from campaign's raised_amount
+    if (donation.payment_status === "SUCCESS" && payment_status !== "SUCCESS") {
+      await pool.query(
+        `UPDATE campaigns SET raised_amount = raised_amount - $1 WHERE campaign_id = $2`,
+        [donation.amount, donation.campaign_id]
+      );
+    }
+
+    // Update the donation's payment status
     const r = await pool.query(
       "UPDATE donations SET payment_status=$1 WHERE donation_id=$2 RETURNING *",
-      [payment_status, req.params.id]
+      [payment_status, donationId]
     );
-    if (!r.rows.length)
-      return res.status(404).json({ error: "Donation not found" });
+
     res.json(r.rows[0]);
   } catch (err) {
     console.error(err);
@@ -66,16 +76,57 @@ export const updateDonationStatus = async (req, res) => {
   }
 };
 
-// Delete donation by ID
+// Delete donation and adjust campaign's raised_amount if donation was successful
 export const deleteDonation = async (req, res) => {
   try {
-    const r = await pool.query(
-      "DELETE FROM donations WHERE donation_id=$1 RETURNING *",
-      [req.params.id]
+    const donationId = req.params.id;
+
+    // Fetch donation before deletion
+    const currentDonation = await pool.query(
+      "SELECT * FROM donations WHERE donation_id = $1",
+      [donationId]
     );
+
+    if (!currentDonation.rows.length) {
+      return res.status(404).json({ error: "Donation not found" });
+    }
+
+    const donation = currentDonation.rows[0];
+
+    // If donation was SUCCESS, subtract amount from campaign raised_amount
+    if (donation.payment_status === "SUCCESS") {
+      await pool.query(
+        `UPDATE campaigns SET raised_amount = raised_amount - $1 WHERE campaign_id = $2`,
+        [donation.amount, donation.campaign_id]
+      );
+    }
+
+    // Delete the donation
+    const r = await pool.query(
+      "DELETE FROM donations WHERE donation_id = $1 RETURNING *",
+      [donationId]
+    );
+
+    if (!r.rows.length) {
+      return res.status(404).json({ error: "Donation not found" });
+    }
+
+    res.json({ message: "Donation deleted and campaign total updated" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Other existing controllers unchanged ...
+
+// Retrieve donation by ID
+export const getDonation = async (req, res) => {
+  try {
+    const r = await pool.query("SELECT * FROM donations WHERE donation_id=$1", [req.params.id]);
     if (!r.rows.length)
       return res.status(404).json({ error: "Donation not found" });
-    res.json({ message: "Deleted" });
+    res.json(r.rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -103,6 +154,23 @@ export const getDonationsByEmail = async (req, res) => {
   }
 };
 
+// Get all donations
+export const getAllDonations = async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT d.*, c.title AS campaign_title, c.campaign_image, c.city, c.ngo_email
+       FROM donations d
+       LEFT JOIN campaigns c ON d.campaign_id = c.campaign_id
+       ORDER BY d.created_at DESC`
+    );
+    res.json(r.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// The rest of your donor controllers like createOrder, verifyPayment remain unchanged
 
 export const createOrder = async (req, res) => {
   try {

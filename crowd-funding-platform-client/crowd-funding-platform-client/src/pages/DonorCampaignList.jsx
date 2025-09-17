@@ -12,6 +12,7 @@ export default function DonorCampaignList() {
   const [selectedCity, setSelectedCity] = useState("All Cities");
   const [cities, setCities] = useState(["All Cities"]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [campaignType, setCampaignType] = useState("active"); // 'active' | 'completed' | 'all'
 
   useEffect(() => {
     (async () => {
@@ -35,19 +36,39 @@ export default function DonorCampaignList() {
     })();
   }, []);
 
+  // Add computed status property to each campaign
+  const campaignsWithStatus = useMemo(() => {
+    const now = Date.now();
+    return list.map((c) => {
+      const isCompleted =
+        Number(c.raised_amount || 0) >= Number(c.target_amount || 1) ||
+        new Date(c.end_date).getTime() < now;
+      return {
+        ...c,
+        status: isCompleted ? "completed" : "active",
+      };
+    });
+  }, [list]);
+
+  // Filter campaigns by search, city, and status (active/completed/all)
   const filtered = useMemo(() => {
-    return list.filter((c) => {
+    let campaigns = campaignsWithStatus.filter((c) => {
       const matchesQ =
         q.trim().length === 0 ||
         (c.title || "").toLowerCase().includes(q.toLowerCase()) ||
         (c.ngo_email || "").toLowerCase().includes(q.toLowerCase());
-
       const matchesCity =
         selectedCity === "All Cities" || c.city === selectedCity;
-
       return matchesQ && matchesCity;
     });
-  }, [list, q, selectedCity]);
+    if (campaignType === "active") {
+      campaigns = campaigns.filter((c) => c.status === "active");
+    } else if (campaignType === "completed") {
+      campaigns = campaigns.filter((c) => c.status === "completed");
+    }
+    // if "all", no additional filtering by status
+    return campaigns;
+  }, [campaignsWithStatus, q, selectedCity, campaignType]);
 
   if (loading)
     return (
@@ -138,6 +159,22 @@ export default function DonorCampaignList() {
             ))}
           </select>
         </div>
+
+        <div className="filter-wrapper">
+          <label htmlFor="campaign-type-filter" className="filter-label">
+            Show:
+          </label>
+          <select
+            id="campaign-type-filter"
+            className="campaign-type-select"
+            value={campaignType}
+            onChange={(e) => setCampaignType(e.target.value)}
+          >
+            <option value="active">Active Campaigns</option>
+            <option value="completed">Completed Campaigns</option>
+            <option value="all">All Campaigns</option>
+          </select>
+        </div>
       </div>
 
       {/* Campaign list */}
@@ -184,9 +221,7 @@ export default function DonorCampaignList() {
                     <span>
                       Start: {new Date(c.start_date).toLocaleDateString()}
                     </span>
-                    <span>
-                      End: {new Date(c.end_date).toLocaleDateString()}
-                    </span>
+                    <span>End: {new Date(c.end_date).toLocaleDateString()}</span>
                   </div>
 
                   <div className="card-actions">
@@ -196,25 +231,31 @@ export default function DonorCampaignList() {
                     >
                       View Details
                     </button>
+                    {/* Donate button only for active campaigns */}
+                    {c.status === "active" && (
+                      <button
+                        onClick={() =>
+                          navigate(`/donate/${c.campaign_id}`, {
+                            state: {
+                              campaignId: c.campaign_id,
+                              campaignTitle: c.title,
+                              campaignImage: c.campaign_image,
+                              ngoEmail: c.ngo_email,
+                              goalAmount: c.target_amount,
+                              raisedAmount: c.raised_amount,
+                              location: c.city,
+                            },
+                          })
+                        }
+                        className="btn btn-green"
+                      >
+                        Donate Now
+                      </button>
+                    )}
+                  </div>
 
-                    <button
-                      onClick={() =>
-                        navigate(`/donate/${c.campaign_id}`, {
-                          state: {
-                            campaignId: c.campaign_id,
-                            campaignTitle: c.title,
-                            campaignImage: c.campaign_image,
-                            ngoEmail: c.ngo_email,
-                            goalAmount: c.target_amount,
-                            raisedAmount: c.raised_amount,
-                            location: c.city,
-                          },
-                        })
-                      }
-                      className="btn btn-green"
-                    >
-                      Donate Now
-                    </button>
+                  <div className={`campaign-status campaign-status-${c.status}`}>
+                    Status: {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
                   </div>
                 </div>
               </article>
@@ -282,16 +323,12 @@ export default function DonorCampaignList() {
                   <div className="detail-group">
                     <h4>Start</h4>
                     <p>
-                      {new Date(
-                        selectedCampaign.start_date
-                      ).toLocaleDateString()}
+                      {new Date(selectedCampaign.start_date).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="detail-group">
                     <h4>End</h4>
-                    <p>
-                      {new Date(selectedCampaign.end_date).toLocaleDateString()}
-                    </p>
+                    <p>{new Date(selectedCampaign.end_date).toLocaleDateString()}</p>
                   </div>
                 </div>
 

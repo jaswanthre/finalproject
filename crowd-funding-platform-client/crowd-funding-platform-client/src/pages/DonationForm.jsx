@@ -1,20 +1,47 @@
-
-import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import "../styles/DonationForm.css";
 
 export default function DonationForm() {
+  const { id } = useParams(); // campaign id from URL
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const campaign = location.state;
+  const [campaign, setCampaign] = useState(location.state || null);
+  const [loading, setLoading] = useState(!location.state);
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Credit Card");
-  const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+
+  // 🔹 Fetch campaign if opened directly via URL
+  useEffect(() => {
+    if (!campaign && id) {
+      (async () => {
+        try {
+          const { data } = await axios.get(
+            `http://localhost:5000/api/campaigns/campaign/campaigns/${id}`
+          );
+          setCampaign({
+            campaignId: data.campaign_id,
+            campaignTitle: data.title,
+            campaignImage: data.campaign_image,
+            ngoEmail: data.ngo_email,
+            goalAmount: data.target_amount,
+            raisedAmount: data.raised_amount,
+            location: data.city,
+          });
+        } catch (err) {
+          console.error("Error fetching campaign:", err);
+          setMsg("Campaign not found.");
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+  }, [id, campaign]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,37 +49,33 @@ export default function DonationForm() {
     setMsg("");
 
     try {
-      
       const orderRes = await axios.post(
-  "http://localhost:5000/api/donors/donation/order",
-  {
-    amount: Number(amount),
-    currency: "INR",
-    receipt: `receipt_${Date.now()}`,
-    campaign_id: campaign.campaignId,
-    donor_email: user.email,
-    payment_method: paymentMethod,  // ✅ Include this
-  },
-  {
-    headers: { Authorization: `Bearer ${user.token}` },
-  }
-);
+        "http://localhost:5000/api/donors/donation/order",
+        {
+          amount: Number(amount),
+          currency: "INR",
+          receipt: `receipt_${Date.now()}`,
+          campaign_id: campaign.campaignId,
+          donor_email: user.email,
+          payment_method: paymentMethod,
+        },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
 
+      const { orderId, amount: orderAmount, currency } = orderRes.data;
 
-      const { id: orderId, amount: orderAmount, currency } = orderRes.data;
-
-      // 2. Initialize Razorpay checkout
       const options = {
-       key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: orderAmount,
-        currency: currency,
+        currency,
         name: "Crowd Funding Platform",
         description: `Donation for ${campaign.campaignTitle}`,
         order_id: orderId,
         handler: async function (response) {
           try {
-            // 3. Verify payment
-            const verifyRes = await axios.post(
+            await axios.post(
               "http://localhost:5000/api/donors/donation/verify",
               {
                 razorpay_order_id: response.razorpay_order_id,
@@ -70,30 +93,27 @@ export default function DonationForm() {
             setMsg("Donation successful! 🎉");
             setAmount("");
             setTimeout(() => navigate("/my-donations"), 2000);
-          } catch (error) {
+          } catch {
             setMsg("Payment verification failed.");
           }
         },
-        prefill: {
-          email: user.email,
-        },
-        theme: {
-          color: "#3399cc",
-        },
+        prefill: { email: user.email },
+        theme: { color: "#3399cc" },
       };
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-
+      new window.Razorpay(options).open();
     } catch (err) {
-  console.error("Error creating order:", err);
-  setMsg(err.response?.data?.error || err.message || "Something went wrong while creating the order.");
-}
-     finally {
+      console.error("Error creating order:", err);
+      setMsg(
+        err.response?.data?.error || err.message || "Order creation failed."
+      );
+    } finally {
       setLoading(false);
     }
   };
-  
+
+  if (loading) return <p>Loading campaign...</p>;
+  if (!campaign) return <p>Campaign not found</p>;
 
   return (
     <div className="donation-form-container">
@@ -104,16 +124,25 @@ export default function DonationForm() {
         />
         <div>
           <h2>{campaign.campaignTitle}</h2>
-          <p><strong>NGO:</strong> {campaign.ngoEmail}</p>
-          <p><strong>City:</strong> {campaign.location}</p>
-          <p><strong>Goal:</strong> ₹{Number(campaign.goalAmount).toLocaleString()}</p>
-          <p><strong>Raised:</strong> ₹{Number(campaign.raisedAmount).toLocaleString()}</p>
+          <p>
+            <strong>NGO:</strong> {campaign.ngoEmail}
+          </p>
+          <p>
+            <strong>City:</strong> {campaign.location}
+          </p>
+          <p>
+            <strong>Goal:</strong> ₹
+            {Number(campaign.goalAmount).toLocaleString()}
+          </p>
+          <p>
+            <strong>Raised:</strong> ₹
+            {Number(campaign.raisedAmount).toLocaleString()}
+          </p>
         </div>
       </div>
 
       <form className="donation-form" onSubmit={handleSubmit}>
         <h3>Make a Donation</h3>
-
         {msg && <p className="message">{msg}</p>}
 
         <label>

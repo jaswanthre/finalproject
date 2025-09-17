@@ -91,7 +91,7 @@ export default function Signup() {
 
         <label>
           I am a
-          <select
+          <select 
             value={form.roleId}
             onChange={(e) => update("roleId", e.target.value)}
           >

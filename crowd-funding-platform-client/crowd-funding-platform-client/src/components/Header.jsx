@@ -19,7 +19,7 @@ export default function Header() {
 
   const handleLogout = () => {
     logout();
-    nav("/login");
+      nav("/", { replace: true });
   };
 
   const isActive = (path) => {
@@ -28,7 +28,7 @@ export default function Header() {
 
   return (
     <header className={`site-header ${scrolled ? "scrolled" : ""}`}>
-      <div className="container header-inner">
+      <div className="container header-inner" style={{alignItems:"center"}}>
         <Link to="/" className="brand animate-fade-in">
           Crowd<span>Fund</span>
         </Link>
@@ -71,9 +71,7 @@ export default function Header() {
                 Dashboard
               </Link>
 
-              <Link to="/campaigns" className={isActive("/campaigns")}>
-                Campaigns
-              </Link>
+             
 
               {user.is_verified ? (
                 <>
@@ -103,11 +101,14 @@ export default function Header() {
               <Link to="/admin" className={isActive("/admin")}>
                 Admin
               </Link>
-              <Link to="/campaigns" className={isActive("/campaigns")}>
-                Campaigns
-              </Link>
+             
             </>
           )}
+{user && (user.role === 1 || user.role === 2) && (
+  <Link to="/campaigns" className={isActive("/campaigns")}>
+    Campaigns
+  </Link>
+)}
 
           {user && (
             <>

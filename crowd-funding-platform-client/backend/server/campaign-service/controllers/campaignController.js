@@ -1,5 +1,6 @@
 import pool from "../db/db.js";
 import { uploadToS3 } from "../middleware/uploadMiddleware.js";
+import { sendCampaignEmail } from "../services/emailService.js";
 
 export const createCampaign = async (req, res) => {
   try {
@@ -12,12 +13,13 @@ export const createCampaign = async (req, res) => {
       end_date,
       city,
     } = req.body;
+
     let imageUrl = null;
     if (req.file) imageUrl = await uploadToS3(req.file, "campaigns");
 
     const result = await pool.query(
       `INSERT INTO campaigns 
-       (ngo_email,title,description,target_amount,start_date,end_date,city,campaign_image) 
+       (ngo_email, title, description, target_amount, start_date, end_date, city, campaign_image) 
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [
         ngo_email,
@@ -30,12 +32,24 @@ export const createCampaign = async (req, res) => {
         imageUrl,
       ]
     );
-    res.json(result.rows[0]);
+
+    const campaign = result.rows[0];
+
+    const usersRes = await pool.query(
+      "SELECT email FROM users WHERE role_id = 3"
+    );
+    const donorEmails = usersRes.rows.map((u) => u.email);
+
+    if (donorEmails.length > 0) {
+      await sendCampaignEmail(donorEmails, campaign);
+    }
+
+    res.json({ success: true, campaign });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error creating campaign:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 };
-
 export const getCampaigns = async (req, res) => {
   try {
     const r = await pool.query("SELECT * FROM campaigns");

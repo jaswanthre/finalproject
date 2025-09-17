@@ -171,7 +171,7 @@ export default function CreateCampaign() {
         {success && (
           <div className="success-box">
             ✅ {msg} <br />
-            <Link to="/ngo" className="btn-green">
+            <Link to="/my-campaigns" className="btn-green">
               View My Campaigns
             </Link>
           </div>

@@ -124,7 +124,7 @@ function DonorDashboard() {
         <div className="dashboard-header-content">
           <div className="dashboard-text">
             <h1 className="dashboard-title">Donor Dashboard</h1>
-            <p className="dashboard-welcome">Welcome back, <span className="user-name">{user?.name || "Donor"}</span>!</p>
+            <p className="dashboard-welcome">Welcome back! <span>{user.name}</span></p>
           </div>
           <div className="dashboard-image">
             <img src="https://www.thelifeyoucansave.org/wp-content/uploads/2019/11/Screen-Shot-2015-07-13-at-1.53.34-PM.png" alt="Effective Giving" />
@@ -182,7 +182,7 @@ function DonorDashboard() {
                         <span className="donation-date">{new Date(donation.date).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <Link to={`/d-campaigns/${donation.campaignId}`} className="btn btn-sm btn-outline">View Campaign</Link>
+                    {/* <Link to={`/d-campaigns/${donation.campaignId}`} className="btn btn-sm btn-outline">View Campaign</Link> */}
                   </div>
                 ))}
               </div>

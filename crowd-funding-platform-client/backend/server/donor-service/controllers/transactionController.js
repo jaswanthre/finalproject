@@ -20,6 +20,14 @@ export const createTransaction = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+export const getAllTransactions = async (req, res) => {
+  try {
+    const r = await pool.query("SELECT * FROM transactions ORDER BY transaction_date DESC");
+    res.json(r.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 export const getTransaction = async (req, res) => {
   try {

@@ -1,0 +1,34 @@
+.table {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 2fr 2fr 2fr;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.table-head {
+  background: #f3f4f6;
+  font-weight: bold;
+}
+.status-badge {
+  padding: 0.35rem 0.85rem;
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.status-badge.approved {
+  background-color: rgba(34,197,94,0.15);
+  color: #16a34a;
+}
+.status-badge.rejected {
+  background-color: rgba(239,68,68,0.15);
+  color: #b91c1c;
+}
+.doc-link {
+  color: #3b82f6;
+  text-decoration: none;
+}

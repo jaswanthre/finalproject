@@ -184,12 +184,12 @@ export default function MyDonations() {
                       </div>
                     </div>
                     <div className="donation-actions">
-                      <Link
+                      {/* <Link
                         to={`/campaigns/${d.campaignId}`}
                         className="btn btn-primary view-campaign-btn"
                       >
                         View Campaign
-                      </Link>
+                      </Link> */}
                     </div>
                   </div>
                 </div>

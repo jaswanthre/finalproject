@@ -1,0 +1,56 @@
+.user-header-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.manage-user {
+  font-size: 1.5rem;
+  color: #fb923c;
+}
+.table {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 2fr;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.table-head {
+  background: #f3f4f6;
+  font-weight: bold;
+}
+.status-badge {
+  padding: 0.35rem 0.85rem;
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.status-approved {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+.status-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.select-input {
+  padding: 0.5rem;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+}
