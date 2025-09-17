@@ -4,41 +4,32 @@ import crypto from "crypto";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
+export const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Create a new donation entry - no raised_amount update here
 export const createDonation = async (req, res) => {
   try {
     const { campaign_id, donor_email, amount, payment_method } = req.body;
-
     const donation = await pool.query(
       `INSERT INTO donations (campaign_id, donor_email, amount, payment_method) 
        VALUES ($1, $2, $3, $4) RETURNING *`,
       [campaign_id, donor_email, amount, payment_method]
     );
-
-    // Do NOT update campaign raised_amount here since payment is initially PENDING
-
     res.status(201).json(donation.rows[0]);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Update donation payment status and adjust campaign's raised_amount accordingly
 export const updateDonationStatus = async (req, res) => {
   try {
     const { payment_status } = req.body;
     const donationId = req.params.id;
 
-    // Fetch current donation to check current status and amount
     const currentDonation = await pool.query(
-      "SELECT * FROM donations WHERE donation_id = $1",
+      "SELECT * FROM donations WHERE donation_id=$1",
       [donationId]
     );
 
@@ -47,23 +38,20 @@ export const updateDonationStatus = async (req, res) => {
 
     const donation = currentDonation.rows[0];
 
-    // If changing status to SUCCESS from something else, add amount to campaign's raised_amount
     if (payment_status === "SUCCESS" && donation.payment_status !== "SUCCESS") {
       await pool.query(
-        `UPDATE campaigns SET raised_amount = raised_amount + $1 WHERE campaign_id = $2`,
+        "UPDATE campaigns SET raised_amount = raised_amount + $1 WHERE campaign_id = $2",
         [donation.amount, donation.campaign_id]
       );
     }
 
-    // If changing status from SUCCESS to something else, subtract amount from campaign's raised_amount
     if (donation.payment_status === "SUCCESS" && payment_status !== "SUCCESS") {
       await pool.query(
-        `UPDATE campaigns SET raised_amount = raised_amount - $1 WHERE campaign_id = $2`,
+        "UPDATE campaigns SET raised_amount = raised_amount - $1 WHERE campaign_id = $2",
         [donation.amount, donation.campaign_id]
       );
     }
 
-    // Update the donation's payment status
     const r = await pool.query(
       "UPDATE donations SET payment_status=$1 WHERE donation_id=$2 RETURNING *",
       [payment_status, donationId]
@@ -71,73 +59,64 @@ export const updateDonationStatus = async (req, res) => {
 
     res.json(r.rows[0]);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Delete donation and adjust campaign's raised_amount if donation was successful
 export const deleteDonation = async (req, res) => {
   try {
     const donationId = req.params.id;
 
-    // Fetch donation before deletion
     const currentDonation = await pool.query(
-      "SELECT * FROM donations WHERE donation_id = $1",
+      "SELECT * FROM donations WHERE donation_id=$1",
       [donationId]
     );
 
-    if (!currentDonation.rows.length) {
+    if (!currentDonation.rows.length)
       return res.status(404).json({ error: "Donation not found" });
-    }
 
     const donation = currentDonation.rows[0];
 
-    // If donation was SUCCESS, subtract amount from campaign raised_amount
     if (donation.payment_status === "SUCCESS") {
       await pool.query(
-        `UPDATE campaigns SET raised_amount = raised_amount - $1 WHERE campaign_id = $2`,
+        "UPDATE campaigns SET raised_amount = raised_amount - $1 WHERE campaign_id = $2",
         [donation.amount, donation.campaign_id]
       );
     }
 
-    // Delete the donation
     const r = await pool.query(
-      "DELETE FROM donations WHERE donation_id = $1 RETURNING *",
+      "DELETE FROM donations WHERE donation_id=$1 RETURNING *",
       [donationId]
     );
 
-    if (!r.rows.length) {
+    if (!r.rows.length)
       return res.status(404).json({ error: "Donation not found" });
-    }
 
     res.json({ message: "Donation deleted and campaign total updated" });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Other existing controllers unchanged ...
-
-// Retrieve donation by ID
 export const getDonation = async (req, res) => {
   try {
-    const r = await pool.query("SELECT * FROM donations WHERE donation_id=$1", [req.params.id]);
+    const r = await pool.query(
+      "SELECT * FROM donations WHERE donation_id=$1",
+      [req.params.id]
+    );
+
     if (!r.rows.length)
       return res.status(404).json({ error: "Donation not found" });
+
     res.json(r.rows[0]);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Get all donations by donor's email
 export const getDonationsByEmail = async (req, res) => {
   try {
     const { email } = req.params;
-
     const r = await pool.query(
       `SELECT d.*, c.title AS campaign_title, c.campaign_image, c.city, c.ngo_email
        FROM donations d
@@ -146,15 +125,12 @@ export const getDonationsByEmail = async (req, res) => {
        ORDER BY d.created_at DESC`,
       [email]
     );
-
     res.json(r.rows);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Get all donations
 export const getAllDonations = async (req, res) => {
   try {
     const r = await pool.query(
@@ -165,18 +141,14 @@ export const getAllDonations = async (req, res) => {
     );
     res.json(r.rows);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
-
-// The rest of your donor controllers like createOrder, verifyPayment remain unchanged
 
 export const createOrder = async (req, res) => {
   try {
     const { campaign_id, donor_email, amount, payment_method } = req.body;
 
-    // Step 1: Create donation record with 'PENDING'
     const donation = await pool.query(
       `INSERT INTO donations (campaign_id, donor_email, amount, payment_method, payment_status)
        VALUES ($1, $2, $3, $4, 'PENDING') RETURNING *`,
@@ -185,17 +157,15 @@ export const createOrder = async (req, res) => {
 
     const donationData = donation.rows[0];
 
-    // Step 2: Create Razorpay order
     const options = {
-  amount: Math.round(amount * 1), // in paise
-  currency: "INR",
-  receipt: `donation_${donationData.donation_id.slice(0, 30)}`,  // CURRENT CODE — problematic
-  payment_capture: 1,
-};
+      amount: Math.round(amount * 1), // Ensure in smallest currency unit
+      currency: "INR",
+      receipt: `donation_${String(donationData.donation_id).slice(0, 30)}`,
+      payment_capture: 1,
+    };
 
     const order = await razorpay.orders.create(options);
 
-    // Step 3: Create transaction record with 'PENDING'
     const transaction = await pool.query(
       `INSERT INTO transactions (donation_id, transaction_amount, payment_gateway, transaction_status)
        VALUES ($1, $2, $3, 'PENDING') RETURNING *`,
@@ -206,45 +176,46 @@ export const createOrder = async (req, res) => {
       orderId: order.id,
       donationId: donationData.donation_id,
       transactionId: transaction.rows[0].transaction_id,
-      amount: amount,
+      amount,
       currency: "INR",
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Failed to create order" });
   }
 };
+
 export const verifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, donationId, transactionId } = req.body;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      donationId,
+      transactionId,
+    } = req.body;
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
-    console.log('Razorpay Secret Key:', process.env.RAZORPAY_KEY_SECRET);
 
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(body)
       .digest("hex");
 
-    if (expectedSignature !== razorpay_signature) {
+    if (expectedSignature !== razorpay_signature)
       return res.status(400).json({ error: "Payment verification failed" });
-    }
 
-    // Step 1: Update donation status
     await pool.query(
-      `UPDATE donations SET payment_status = 'SUCCESS' WHERE donation_id = $1`,
+      "UPDATE donations SET payment_status = 'SUCCESS' WHERE donation_id = $1",
       [donationId]
     );
 
-    // Step 2: Update transaction status
     await pool.query(
-      `UPDATE transactions SET transaction_status = 'SUCCESS' WHERE transaction_id = $1`,
+      "UPDATE transactions SET transaction_status = 'SUCCESS' WHERE transaction_id = $1",
       [transactionId]
     );
 
     res.json({ message: "Payment verified successfully" });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Payment verification failed" });
   }
 };

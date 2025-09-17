@@ -5,26 +5,32 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const storage = multer.memoryStorage();
+
 const upload = multer({ storage });
 
-console.log(process.env.MY_AWS_S3_BUCKET);
-console.log(process.env.MY_AWS_REGION);
-console.log(process.env.MY_AWS_ACCESS_KEY_ID);
-console.log(process.env.MY_AWS_SECRET_ACCESS_KEY);
+// if (process.env.NODE_ENV === "development") {
+//   console.log("AWS Region:", process.env.MY_AWS_REGION);
+//   console.log("AWS S3 Bucket:", process.env.MY_AWS_S3_BUCKET);
+// }
 
 export const profileUpload = upload.single("profile_image");
 
 export const uploadToS3 = async (file, folder) => {
   if (!file) return null;
-  const upload = new Upload({
-    client: s3,
-    params: {
-      Bucket: process.env.MY_AWS_S3_BUCKET,
-      Key: `${folder}/${Date.now()}-${file.originalname}`,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    },
-  });
-  const result = await upload.done();
-  return result.Location;
+  try {
+    const uploader = new Upload({
+      client: s3,
+      params: {
+        Bucket: process.env.MY_AWS_S3_BUCKET,
+        Key: `${folder}/${Date.now()}-${file.originalname}`,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      },
+    });
+    const result = await uploader.done();
+    return result.Location;
+  } catch (err) {
+    console.error("S3 upload failed:", err);
+    return null;
+  }
 };

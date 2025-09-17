@@ -29,9 +29,9 @@ const start = async () => {
     const res = await pool.query("SELECT NOW()");
     console.log("Connected to Postgres at:", res.rows[0].now);
 
-    const PORT = process.env.PORT || 5000;
+    const PORT = 5003;
     app.listen(PORT, () => {
-      console.log(`Donor service running on port ${PORT}`);
+      console.log(`Donor service running on port {PORT}`);
     });
   } catch (err) {
     console.error("Postgres connection failed:", err.message);

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import "../styles/VerifyNgo.css";
-
+import "../styles/VerifyNgo.css"
 export default function VerifyNgo() {
   const { user } = useAuth();
   const navigate = useNavigate();
