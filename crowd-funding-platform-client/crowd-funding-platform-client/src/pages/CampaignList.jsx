@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import ProgressBar from "../components/ProgressBar";
 import "../styles/DonorCampaignList.css";
 
-export default function DonorCampaignList() {
+export default function CampaignList() {
   const navigate = useNavigate();
   const [list, setList] = useState([]);
   const [q, setQ] = useState("");
@@ -12,7 +12,7 @@ export default function DonorCampaignList() {
   const [selectedCity, setSelectedCity] = useState("All Cities");
   const [cities, setCities] = useState(["All Cities"]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
-  const [campaignType, setCampaignType] = useState("active"); // 'active' | 'completed' | 'all'
+  const [campaignType, setCampaignType] = useState("active");
 
   useEffect(() => {
     (async () => {
@@ -20,7 +20,6 @@ export default function DonorCampaignList() {
         const { data } = await axios.get(
           "http://localhost:5000/api/campaigns/campaign/campaigns"
         );
-
         if (Array.isArray(data)) {
           setList(data);
           const uniqueCities = [
@@ -36,25 +35,26 @@ export default function DonorCampaignList() {
     })();
   }, []);
 
-  // Add computed status property to each campaign
   const campaignsWithStatus = useMemo(() => {
     const now = Date.now();
     return list.map((c) => {
-      const isCompleted =
-        Number(c.raised_amount || 0) >= Number(c.target_amount || 1) ||
-        new Date(c.end_date).getTime() < now;
-      return {
-        ...c,
-        status: isCompleted ? "completed" : "active",
-        // Add location field in case it exists or fallback to city
-        location: c.location || c.city || "Unknown",
-      };
+      const dbStatus = (c.status || "").toUpperCase();
+      if (dbStatus === "PENDING") {
+        return { ...c, status: "pending" };
+      }
+      if (dbStatus === "ACTIVE") {
+        const isCompleted =
+          Number(c.raised_amount || 0) >= Number(c.target_amount || 1) ||
+          new Date(c.end_date).getTime() < now;
+        return { ...c, status: isCompleted ? "completed" : "active" };
+      }
+      return { ...c, status: dbStatus.toLowerCase() };
     });
   }, [list]);
 
-  // Filter campaigns by search, city, and status (active/completed/all)
   const filtered = useMemo(() => {
     let campaigns = campaignsWithStatus.filter((c) => {
+      if (c.status === "pending") return false;
       const matchesQ =
         q.trim().length === 0 ||
         (c.title || "").toLowerCase().includes(q.toLowerCase()) ||
@@ -68,7 +68,6 @@ export default function DonorCampaignList() {
     } else if (campaignType === "completed") {
       campaigns = campaigns.filter((c) => c.status === "completed");
     }
-    // if "all", no additional filtering by status
     return campaigns;
   }, [campaignsWithStatus, q, selectedCity, campaignType]);
 
@@ -81,7 +80,6 @@ export default function DonorCampaignList() {
 
   return (
     <div className="container">
-      {/* Hero section */}
       <div
         style={{
           textAlign: "center",
@@ -124,7 +122,6 @@ export default function DonorCampaignList() {
         </div>
       </div>
 
-      {/* Toolbar */}
       <div className="toolbar">
         <div className="search-wrapper">
           <input
@@ -179,7 +176,6 @@ export default function DonorCampaignList() {
         </div>
       </div>
 
-      {/* Campaign list */}
       {filtered.length === 0 ? (
         <div className="empty-state">
           <h3>No campaigns found</h3>
@@ -191,7 +187,6 @@ export default function DonorCampaignList() {
             const progressPercentage = Math.round(
               ((c.raised_amount || 0) / (c.target_amount || 1)) * 100
             );
-
             return (
               <article className="card campaign-card" key={c.campaign_id}>
                 <img
@@ -206,31 +201,22 @@ export default function DonorCampaignList() {
                   <p className="card-description">
                     {c.description?.substring(0, 100)}...
                   </p>
-
                   <ProgressBar
                     current={Number(c.raised_amount) || 0}
                     goal={Number(c.target_amount) || 1}
                   />
-
                   <div className="progress-info">
                     <span>
                       ₹{Number(c.raised_amount || 0).toLocaleString()} raised
                     </span>
                     <span>{progressPercentage}% funded</span>
                   </div>
-
                   <div className="campaign-dates">
                     <span>
                       Start: {new Date(c.start_date).toLocaleDateString()}
                     </span>
                     <span>End: {new Date(c.end_date).toLocaleDateString()}</span>
                   </div>
-
-                  {/* Display location */}
-                  <div className="campaign-location">
-                    <strong>Location:</strong> {c.location}
-                  </div>
-
                   <div className="card-actions">
                     <button
                       onClick={() => setSelectedCampaign(c)}
@@ -238,32 +224,11 @@ export default function DonorCampaignList() {
                     >
                       View Details
                     </button>
-                    {/* Donate button only for active campaigns */}
-                    {c.status === "active" && (
-                      <button
-                        onClick={() =>
-                          navigate(`/donate/${c.campaign_id}`, {
-                            state: {
-                              campaignId: c.campaign_id,
-                              campaignTitle: c.title,
-                              campaignImage: c.campaign_image,
-                              ngoEmail: c.ngo_email,
-                              goalAmount: c.target_amount,
-                              raisedAmount: c.raised_amount,
-                              location: c.location,
-                            },
-                          })
-                        }
-                        className="btn btn-green"
-                      >
-                        Donate Now
-                      </button>
-                    )}
                   </div>
-
                   <div className={`campaign-status campaign-status-${c.status}`}>
-                    Status: {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
-                  </div>
+  Status: {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
+</div>
+
                 </div>
               </article>
             );
@@ -271,7 +236,6 @@ export default function DonorCampaignList() {
         </div>
       )}
 
-      {/* Modal for details */}
       {selectedCampaign && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -281,11 +245,9 @@ export default function DonorCampaignList() {
             >
               ×
             </button>
-
             <div className="modal-header">
               <h3>{selectedCampaign.title}</h3>
             </div>
-
             <div className="modal-body">
               <img
                 src={
@@ -295,11 +257,9 @@ export default function DonorCampaignList() {
                 alt={selectedCampaign.title}
                 className="modal-image"
               />
-
               <div className="campaign-details">
                 <h4>Description</h4>
                 <p>{selectedCampaign.description}</p>
-
                 <div className="detail-row">
                   <div className="detail-group">
                     <h4>NGO Email</h4>
@@ -310,13 +270,6 @@ export default function DonorCampaignList() {
                     <p>{selectedCampaign.city}</p>
                   </div>
                 </div>
-
-                {/* Added location display */}
-                <div className="detail-group">
-                  <h4>Location</h4>
-                  <p>{selectedCampaign.location}</p>
-                </div>
-
                 <div className="detail-row">
                   <div className="detail-group">
                     <h4>Goal</h4>
@@ -331,23 +284,28 @@ export default function DonorCampaignList() {
                     </p>
                   </div>
                 </div>
-
                 <div className="detail-row">
                   <div className="detail-group">
                     <h4>Start</h4>
-                    <p>{new Date(selectedCampaign.start_date).toLocaleDateString()}</p>
+                    <p>
+                      {new Date(
+                        selectedCampaign.start_date
+                      ).toLocaleDateString()}
+                    </p>
                   </div>
                   <div className="detail-group">
                     <h4>End</h4>
-                    <p>{new Date(selectedCampaign.end_date).toLocaleDateString()}</p>
+                    <p>
+                      {new Date(
+                        selectedCampaign.end_date
+                      ).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
-
                 <div className="detail-group">
                   <h4>Status</h4>
                   <p>{selectedCampaign.status}</p>
                 </div>
-
                 <div className="detail-group">
                   <h4>Progress</h4>
                   <ProgressBar

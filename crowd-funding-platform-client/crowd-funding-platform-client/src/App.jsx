@@ -64,7 +64,7 @@ export default function App() {
                 <Route path="/ngo" element={<NgoDashboard />} />
                 <Route path="/create-campaign" element={<CreateCampaign />} />
                 <Route path="/my-campaigns" element={<MyCampaigns />} />
-                {/* <Route path="/campaigns" element={<CampaignList />} /> */}
+                {/* <Route path="/campaigns" element={<CampaignList />} />  */}
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />
                 <Route path="/VerifyNgo" element={<VerifyNgo />} />
               </Route>
@@ -73,7 +73,7 @@ export default function App() {
               <Route element={<ProtectedRoute roles={[1]} />}>
                 <Route path="/admin" element={<AdminDashboard />} />
               </Route>
-              <Route element={<ProtectedRoute roles={[1, 2, 3]} />}>
+              <Route element={<ProtectedRoute roles={[1, 2]} />}>
                 <Route path="/my-profile" element={<ProfilePage />} />
                 <Route path="/campaigns" element={<CampaignList />} />
               </Route>

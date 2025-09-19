@@ -1,18 +1,14 @@
-
 import { useEffect, useState, useRef } from "react";
 import "./AdminDashboard.css";
 import { useAuth } from "../context/AuthContext";
-
 export default function AdminDashboard() {
   const { user } = useAuth();
-
   // User, Verification, Campaign, Donation, Transaction Data States
   const [users, setUsers] = useState([]);
   const [verifications, setVerifications] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [donations, setDonations] = useState([]);
   const [transactions, setTransactions] = useState([]);
-
   const [activeTab, setActiveTab] = useState("users");
   const [editingUser, setEditingUser] = useState(null);
   const [editRole, setEditRole] = useState("");
@@ -24,7 +20,6 @@ export default function AdminDashboard() {
   const [message, setMessage] = useState({ text: "", type: "" });
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileDropdownRef = useRef(null);
-
   // Add User Form
   const [showAddUserForm, setShowAddUserForm] = useState(false);
   const [newUser, setNewUser] = useState({
@@ -33,7 +28,6 @@ export default function AdminDashboard() {
     password: "",
     roleId: "",
   });
-
   // Role Filter State
   const [filterRole, setFilterRole] = useState("all");
   const roleMap = {
@@ -41,16 +35,13 @@ export default function AdminDashboard() {
     2: "NGO",
     3: "DONOR",
   };
-
   // Donation & Transaction Filter States
   const [donationFilter, setDonationFilter] = useState("all");
   const [transactionFilter, setTransactionFilter] = useState("all");
   const [transactionDateFilter, setTransactionDateFilter] = useState("");
-
   const getHeaders = () => {
     return user?.token ? { Authorization: `Bearer ${user.token}` } : {};
   };
-
   // Fetch Data Helpers
   const fetchData = async () => {
     setLoading(true);
@@ -61,7 +52,6 @@ export default function AdminDashboard() {
       );
       const verifJson = await verifRes.json();
       setVerifications(verifJson.verifications || []);
-
       const userRes = await fetch(
         "http://localhost:5000/api/users/admin/users",
         { headers: getHeaders() }
@@ -74,7 +64,6 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   const fetchCampaigns = async () => {
     setLoading(true);
     try {
@@ -90,7 +79,6 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   const fetchDonations = async () => {
     setLoading(true);
     try {
@@ -105,7 +93,6 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   const fetchTransactions = async () => {
     setLoading(true);
     try {
@@ -120,7 +107,6 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchData();
     if (activeTab === "campaigns") {
@@ -131,7 +117,6 @@ export default function AdminDashboard() {
       fetchTransactions();
     }
   }, [activeTab]);
-
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -145,6 +130,16 @@ export default function AdminDashboard() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // New useEffect to clear message after 10 seconds
+  useEffect(() => {
+    if (message.text) {
+      const timer = setTimeout(() => {
+        setMessage({ text: "", type: "" });
+      }, 10000); // 10 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [message.text]);
 
   // User actions
   const handleUpdateUserRole = async (email) => {
@@ -168,6 +163,30 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
+ const handleApproveCampaign = async (campaignId) => {
+  if (!window.confirm("Approve this campaign?")) return;
+  setLoading(true);
+  try {
+    const res = await fetch(
+      `http://localhost:5000/api/campaigns/campaign/campaigns/status/${campaignId}`,
+      {
+        method: "PUT",
+        headers: getHeaders(),
+      }
+    );
+    const data = await res.json();
+    if (data.success) {
+      fetchCampaigns(); // refresh campaigns list
+      setMessage({ text: data.message, type: "success" });
+    } else {
+      setMessage({ text: data.message || "Failed to approve campaign", type: "error" });
+    }
+  } catch (err) {
+    setMessage({ text: err.message, type: "error" });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDeleteUser = async (email) => {
     if (!window.confirm(`Delete user ${email}?`)) return;
@@ -189,7 +208,6 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   // Verification actions
   const handleUpdateVerification = async (email, status) => {
     const feedback =
@@ -215,7 +233,6 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   const handleDeleteVerification = async (email) => {
     if (!window.confirm("Delete verification?")) return;
     try {
@@ -232,7 +249,6 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   // Add user
   const handleAddUser = async () => {
     try {
@@ -260,7 +276,6 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   // Campaign actions
   const handleDeleteCampaign = async (campaignId) => {
     if (!window.confirm("Delete this campaign?")) return;
@@ -281,13 +296,11 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   const handleEditCampaign = (campaignId) => {
     const campaign = campaigns.find((c) => c.campaign_id === campaignId);
     setEditingCampaign(campaignId);
     setEditCampaignData({ ...campaign });
   };
-
   const handleSaveCampaignEdit = async () => {
     setLoading(true);
     try {
@@ -311,7 +324,6 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   // Donation actions
   const handleDeleteDonation = async (donationId) => {
     if (!window.confirm("Delete this donation?")) return;
@@ -329,13 +341,11 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   const handleEditDonation = (donationId) => {
     const donation = donations.find((d) => d.donation_id === donationId);
     setEditingDonation(donationId);
     setEditDonationData({ ...donation });
   };
-
   const handleSaveDonationEdit = async () => {
     setLoading(true);
     try {
@@ -359,26 +369,21 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
   // Filter donations based on donationFilter state
   const filteredDonations = donations.filter((d) => {
     if (donationFilter === "all") return true;
     return d.payment_status === donationFilter.toUpperCase();
   });
-
   // Filter transactions based on status and date
   const filteredTransactions = transactions.filter((t) => {
     const statusMatch = transactionFilter === "all" || t.transaction_status === transactionFilter.toUpperCase();
-
     let dateMatch = true;
     if (transactionDateFilter) {
       const txnDate = new Date(t.transaction_date).toISOString().slice(0, 10);
       dateMatch = txnDate === transactionDateFilter;
     }
-
     return statusMatch && dateMatch;
   });
-
   return (
     <div className="container">
       <div className="admin-header">
@@ -399,7 +404,6 @@ export default function AdminDashboard() {
           </button>
         </div>
       )}
-
       <div className="tabs">
         <button
           className={`tab-btn ${activeTab === "users" ? "active" : ""}`}
@@ -419,6 +423,8 @@ export default function AdminDashboard() {
         >
           Manage Campaigns
         </button>
+
+
         <button
           className={`tab-btn ${activeTab === "donations" ? "active" : ""}`}
           onClick={() => setActiveTab("donations")}
@@ -432,7 +438,6 @@ export default function AdminDashboard() {
           Manage Transactions
         </button>
       </div>
-
       {/* USERS TAB */}
       {activeTab === "users" && (
         <section className="card">
@@ -564,7 +569,6 @@ export default function AdminDashboard() {
           )}
         </section>
       )}
-
       {/* VERIFICATIONS TAB */}
       {activeTab === "verifications" && (
         <section className="card">
@@ -662,7 +666,6 @@ export default function AdminDashboard() {
           )}
         </section>
       )}
-
       {/* CAMPAIGNS TAB */}
       {activeTab === "campaigns" && (
         <section className="card">
@@ -694,25 +697,31 @@ export default function AdminDashboard() {
                   <div>{c.city}</div>
                   <div>₹ {Number(c.target_amount).toLocaleString()}</div>
                   <div>₹ {Number(c.raised_amount).toLocaleString()}</div>
-                  <div className="row gap">
-                    <button
-                      className="btn btn-sm btn-outline"
-                      onClick={() => handleEditCampaign(c.campaign_id)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDeleteCampaign(c.campaign_id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
+   <div className="row gap">
+  <button
+    className="btn btn-sm btn-success"
+    onClick={() => handleApproveCampaign(c.campaign_id)}
+    disabled={c.status === "ACTIVE"}
+  >
+    Approve
+  </button>
+  <button
+    className="btn btn-sm btn-outline"
+    onClick={() => handleEditCampaign(c.campaign_id)}
+  >
+    Edit
+  </button>
+  <button
+    className="btn btn-sm btn-danger"
+    onClick={() => handleDeleteCampaign(c.campaign_id)}
+  >
+    Delete
+  </button>
+</div>
                 </div>
               ))}
             </div>
           )}
-
           {editingCampaign && (
             <div className="modal-overlay">
               <div className="modal">
@@ -782,7 +791,6 @@ export default function AdminDashboard() {
           )}
         </section>
       )}
-
       {/* DONATIONS TAB */}
       {activeTab === "donations" && (
         <section className="card">
@@ -886,7 +894,6 @@ export default function AdminDashboard() {
           )}
         </section>
       )}
-
       {/* TRANSACTIONS TAB */}
       {activeTab === "transactions" && (
         <section className="card">
@@ -911,7 +918,6 @@ export default function AdminDashboard() {
                 <option value="PENDING">Pending Transactions</option>
               </select>
             </div>
-
             {/* Transaction Date Filter */}
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <label htmlFor="transaction-date-filter">Filter by Date:</label>
@@ -933,7 +939,6 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
-
           {loading ? (
             <p className="muted">Loading transactions...</p>
           ) : filteredTransactions.length === 0 ? (
@@ -966,7 +971,6 @@ export default function AdminDashboard() {
           )}
         </section>
       )}
-
       {/* Add User Modal */}
       {showAddUserForm && (
         <div className="modal-overlay">
@@ -1018,7 +1022,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-
       {loading && (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>

@@ -9,7 +9,7 @@ CREATE TABLE campaigns (
     end_date DATE NOT NULL,
     city VARCHAR(100),
     campaign_image TEXT, -- Cover image
-    status VARCHAR(20) DEFAULT 'ACTIVE', -- ACTIVE, COMPLETED, CANCELLED
+    status VARCHAR(20) DEFAULT 'PENDING', 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

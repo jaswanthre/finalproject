@@ -16,6 +16,7 @@ import {
   addComment,
   getCommentsByCampaign,
   getCampaignsByEmail,
+  approveCampaign
 } from "../controllers/campaignController.js";
 
 const router = express.Router();
@@ -26,6 +27,8 @@ router.get("/campaigns/email/:email", getCampaignsByEmail);
 router.post("/campaigns", upload.single("campaign_image"), createCampaign);
 router.get("/campaigns", getCampaigns);
 router.get("/campaigns/:id", getCampaignById);
+router.put("/campaigns/status/:id",approveCampaign);
+
 router.put("/campaigns/:id", upload.single("campaign_image"), updateCampaign);
 router.delete("/campaigns/:id", deleteCampaign);
 

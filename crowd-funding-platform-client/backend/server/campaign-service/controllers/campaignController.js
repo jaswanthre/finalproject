@@ -17,10 +17,11 @@ export const createCampaign = async (req, res) => {
     let imageUrl = null;
     if (req.file) imageUrl = await uploadToS3(req.file, "campaigns");
 
+    // Insert with default status = 'PENDING'
     const result = await pool.query(
       `INSERT INTO campaigns 
-       (ngo_email, title, description, target_amount, start_date, end_date, city, campaign_image) 
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+       (ngo_email, title, description, target_amount, start_date, end_date, city, campaign_image, status) 
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'PENDING') RETURNING *`,
       [
         ngo_email,
         title,
@@ -35,21 +36,58 @@ export const createCampaign = async (req, res) => {
 
     const campaign = result.rows[0];
 
-    const usersRes = await pool.query(
-      "SELECT email FROM users WHERE role_id = 3"
-    );
-    const donorEmails = usersRes.rows.map((u) => u.email);
-
-    if (donorEmails.length > 0) {
-      await sendCampaignEmail(donorEmails, campaign);
-    }
-
-    res.json({ success: true, campaign });
+    // 🚨 Do NOT notify donors yet (only after approval)
+    res.json({
+      success: true,
+      message: "Campaign created successfully and is pending admin approval.",
+      campaign,
+    });
   } catch (err) {
     console.error("Error creating campaign:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
+export const approveCampaign = async (req, res) => {
+  try {
+    const { id } = req.params; // use :id from router
+
+    const result = await pool.query(
+      `UPDATE campaigns 
+       SET status = 'ACTIVE', updated_at = CURRENT_TIMESTAMP 
+       WHERE campaign_id = $1 RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Campaign not found" });
+    }
+
+    const campaign = result.rows[0];
+
+    // ✅ Fetch all donor emails
+    const usersRes = await pool.query(
+      "SELECT email FROM users WHERE role_id = 3"
+    );
+    const donorEmails = usersRes.rows.map((u) => u.email);
+
+    // ✅ Trigger notification email if donors exist
+    if (donorEmails.length > 0) {
+      await sendCampaignEmail(donorEmails, campaign);
+    }
+
+    res.json({
+      success: true,
+      message: "Campaign approved and is now active. Donors notified.",
+      campaign,
+    });
+  } catch (err) {
+    console.error("Error approving campaign:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 export const getCampaigns = async (req, res) => {
   try {
     const r = await pool.query("SELECT * FROM campaigns");
